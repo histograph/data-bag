@@ -1,0 +1,8 @@
+{
+  "baseDownloadUrl" : "http://geodata.nationaalgeoregister.nl/inspireadressen/extract/",
+  "datafilename" : "inspireadressen.zip",
+  "baseUri" : "http://bag.kadaster.nl/",
+  "baseUrlTest" : "http://data.nlextract.nl/bag/bron/",
+  "dataFileNameTest" : "BAG_Amstelveen_2011feb01.zip"
+
+}

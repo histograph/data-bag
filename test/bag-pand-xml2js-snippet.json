@@ -1,0 +1,70 @@
+{
+  "bag_LVC:Pand": {
+    "bag_LVC:identificatie": [
+      "0362100001064920"
+    ],
+    "bag_LVC:aanduidingRecordInactief": [
+      "N"
+    ],
+    "bag_LVC:aanduidingRecordCorrectie": [
+      "0"
+    ],
+    "bag_LVC:officieel": [
+      "N"
+    ],
+    "bag_LVC:pandGeometrie": [
+      {
+        "gml:Polygon": [
+          {
+            "$": {
+              "srsName": "urn:ogc:def:crs:EPSG::28992"
+            },
+            "gml:exterior": [
+              {
+                "gml:LinearRing": [
+                  {
+                    "gml:posList": [
+                      {
+                        "_": "116938.595 477068.148 0.0 116930.644 477071.854 0.0 116928.365 477066.959 0.0 116936.316 477063.253 0.0 116936.327 477063.277 0.0 116938.595 477068.148 0.0",
+                        "$": {
+                          "srsDimension": "3",
+                          "count": "6"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "bag_LVC:bouwjaar": [
+      "1991"
+    ],
+    "bag_LVC:pandstatus": [
+      "Pand in gebruik"
+    ],
+    "bag_LVC:tijdvakgeldigheid": [
+      {
+        "bagtype:begindatumTijdvakGeldigheid": [
+          "1989103100000000"
+        ]
+      }
+    ],
+    "bag_LVC:inOnderzoek": [
+      "N"
+    ],
+    "bag_LVC:bron": [
+      {
+        "bagtype:documentdatum": [
+          "19891031"
+        ],
+        "bagtype:documentnummer": [
+          "10919"
+        ]
+      }
+    ]
+  }
+}
