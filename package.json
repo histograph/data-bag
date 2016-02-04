@@ -4,20 +4,29 @@
   "description": "Download and convert Basisregistratie Adressen en Gebouwen data to Histograph NDJSON",
   "main": "bag.js",
   "devDependencies": {
+    "babel-cli": "^6.4.5",
+    "babel-preset-es2015": "^6.3.13",
+    "babel-register": "^6.4.3",
+    "chai": "^3.5.0",
+    "chai-as-promised": "^5.2.0",
     "jscs": "^1.10.0",
     "jshint": "^2.6.0",
     "mocha": "^2.3.4",
     "tape": "^3.4.0"
   },
   "scripts": {
-    "test": "jshint *.js && jscs *.js"
+    "test": "mocha --compilers js:babel-register test/test.js"
   },
-  "author": "Bert Spaan",
+  "author": "Rein van t Veer",
   "license": "MIT",
   "dependencies": {
     "bluebird": "^3.1.1",
+    "geojson-validation": "^0.1.6",
     "highland": "^2.5.1",
+    "jsts": "^0.17.0",
+    "proj4": "^2.3.12",
     "ramda": "^0.18.0",
+    "reproject": "^1.0.0",
     "request": "^2.67.0",
     "sax": "^1.1.4",
     "saxpath": "^0.6.3",
