@@ -15,8 +15,6 @@ var config = require('../config.json');
 describe('histograph-data-bag', function(){
     this.timeout(800000);
 
-/*
-
     it('should download the test dataset', function shouldDownloadTestdata(){
         return bag.downloadDataFile(config.baseUrlTest, config.dataFileNameTest, __dirname)
             .then(function onFullFilled(){
@@ -36,7 +34,6 @@ describe('histograph-data-bag', function(){
             });
         });
     });
-*/
 
     it('should invalidate an invalid feature', () => {
         var invalidFeature = {
