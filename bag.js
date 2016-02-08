@@ -33,17 +33,34 @@ module.exports = {
   toWGS84: toWGS84,
   write: write,
   steps: [
-    download
+    download,
+    convert,
   ]
 };
 
-function download(config, dir, writer, callback, fileDownloadURL) {
+function download(config, dir, writer, callback) {
   downloadDataFile(bagconfig.baseDownloadUrl, bagconfig.datafilename, dir)
-    .then(() => {
-      console.log(Date.now(), 'extraction of ', bagconfig.baseDownloadUrl + bagconfig.datafilename, 'complete!');
+    .then((fullPath) => {
+      console.log(`${Date.now()} download of ${fullPath} complete!`);
       return extractZipfile(path.join(dir, bagconfig.datafilename), dir);
     })
-    .catch(error => console.error(`${Date.now()} Download and extraction failed due to ${error}`));
+    .then(() => {
+      console.log(`${Date.now()} extraction complete!`);
+      return callback
+    })
+    .catch(error => {
+      console.error(`${Date.now()} Download and extraction failed due to ${error}`);
+      return callback(error);
+    });
+}
+
+function convert(config, dir, writer, callback) {
+  var extractDir = path.join(config.data.generatedDataDir, 'data-bag');
+  extractDir = path.resolve(extractDir);
+
+  extractBuildingsFromDir(dir, path.join(extractDir, 'pand.ndjson'))
+    .then(() => callback)
+    .catch((error) => callback(error));
 }
 
 function downloadDataFile(baseURL, filename, dir) {
@@ -62,67 +79,63 @@ function downloadDataFile(baseURL, filename, dir) {
   })
 }
 
-function extractZipfile(zipfilename, extractdir, callback) {
-  console.log('extractdir: ', extractdir, '\n');
-  mkdirp(extractdir);
+function extractZipfile(zipfilename, extractdir) {
+  return new Promise((resolve, reject) => {
+    console.log('extractdir: ', extractdir, '\n');
+    mkdirp(extractdir);
 
-  console.log('zipfilename: ', zipfilename, '\n');
-  yauzl.open(zipfilename, {lazyEntries: true}, (err, zipfile) => {
-    if (err) throw err;
+    console.log('zipfilename: ', zipfilename, '\n');
+    yauzl.open(zipfilename, {lazyEntries: true}, (err, zipfile) => {
+      if (err) reject(err);
 
-    zipfile.readEntry();
+      zipfile.readEntry();
 
-    zipfile.on('entry', entry => {
-      if (/\/$/.test(entry.fileName)) {
-        // directory file names end with '/'
-        mkdirp(entry.fileName,
-          err => {
-            if (err) throw err;
-            zipfile.readEntry();
-          });
+      zipfile.on('entry', entry => {
+        if (/\/$/.test(entry.fileName)) {
+          // directory file names end with '/'
+          mkdirp(entry.fileName,
+            err => {
+              if (err) throw err;
+              return zipfile.readEntry();
+            });
 
-      } else {
+        }
+
         // file entry
         zipfile.openReadStream(entry, (err, readStream) => {
           if (err) {
             console.log(`Error reading ${entry.fileName}`);
-            throw err;
+            reject(err);
           }
 
           // ensure parent directory exists
           mkdirp(path.dirname(entry.fileName), err => {
-            if (err) throw err;
+            if (err) reject(err);
 
             readStream.pipe(fs.createWriteStream(path.join(extractdir, entry.fileName)));
 
             readStream.on('end', () => {
               if (entry.fileName.slice(-4) === '.zip') {
-                extractZipfile(
-                  path.join(extractdir, entry.fileName),
-                  extractdir, () => {
+                extractZipfile(path.join(extractdir, entry.fileName), extractdir)
+                  .then(() => {
                     console.log(`Extracted subzip ${entry.fileName}`);
                     zipfile.readEntry();
-                  }
-                );
-
+                  });
               } else {
                 zipfile.readEntry();
-
               }
-
             });
 
-            readStream.on('error', err => {
-              console.log(Date.now(), err.stack);
-              throw(err);
-            })
+            readStream.on('error', err => reject(err));
+
           });
         });
-      }
-    });
 
-    zipfile.on('end', callback);
-  });
+      });
+
+      zipfile.on('end', () => resolve());
+    });
+  })
 }
 
 function extractBuildingsFromDir(dir, targetFile) {
@@ -137,10 +150,13 @@ function extractBuildingsFromDir(dir, targetFile) {
     })
       .parallel(10) //Do max 10 files at once
       .sequence() //Flatten one level deep
+      .errors(err => console.log(`Buildings stream threw error: ${err}`))
       .map(building => JSON.stringify(building) + '\n')
       .pipe(writeStream);
 
-    writeStream.on('finish', () => resolve(true));
+
+    writeStream.on('finish', () => resolve());
+    writeStream.on('error', error => reject(error));
   });
 }
 
@@ -164,25 +180,27 @@ function extractBuildingsFromFile(file) {
 
     streamer.on('match', xml => {
       parser.parseString(xml, (err, result) => {
-        if (!err) {
-          joinGMLposlist(result['bag_LVC:Pand']['bag_LVC:pandGeometrie'][0]['gml:Polygon'][0]['gml:exterior'][0]['gml:LinearRing'][0]['gml:posList'][0]._)
-            .then(list => {
-              var polygon = [];
-              polygon[0] = list;
-
-              buildings.push({
-                uri: module.exports.url + '/pand/' + result['bag_LVC:Pand']['bag_LVC:identificatie'][0],
-                id: result['bag_LVC:Pand']['bag_LVC:identificatie'][0],
-                bouwjaar: result['bag_LVC:Pand']['bag_LVC:bouwjaar'][0],
-                geometry: {
-                  type: 'Polygon',
-                  coordinates: polygon
-                }
-              })
-            });
-        } else {
+        if (err) {
           console.error(`Error parsing xml element ${xml} \n ${err.stack}`);
+          reject(err);
         }
+
+        joinGMLposlist(result['bag_LVC:Pand']['bag_LVC:pandGeometrie'][0]['gml:Polygon'][0]['gml:exterior'][0]['gml:LinearRing'][0]['gml:posList'][0]._)
+          .then(list => {
+            var polygon = [];
+            polygon[0] = list;
+
+            buildings.push({
+              uri: module.exports.url + '/pand/' + result['bag_LVC:Pand']['bag_LVC:identificatie'][0],
+              id: result['bag_LVC:Pand']['bag_LVC:identificatie'][0],
+              bouwjaar: result['bag_LVC:Pand']['bag_LVC:bouwjaar'][0],
+              geometry: {
+                type: 'Polygon',
+                coordinates: polygon
+              }
+            });
+          });
+
       });
     });
 

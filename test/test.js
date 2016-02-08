@@ -21,35 +21,41 @@ describe('histograph-data-bag', function() {
       .then(filename => {
         var unzipDir = path.join(__dirname, 'unzip');
 
-        bag.extractZipfile(filename, unzipDir, () => {
-          expect(fs.readdirSync(unzipDir)).to.deep.equal([
-            '1050LIG08032011-01022011.xml',
-            '1050LIG08032011-01022011.zip',
-            '1050NUM08032011-01022011-0001.xml',
-            '1050NUM08032011-01022011-0002.xml',
-            '1050NUM08032011-01022011-0003.xml',
-            '1050NUM08032011-01022011.zip',
-            '1050OPR08032011-01022011.xml',
-            '1050OPR08032011-01022011.zip',
-            '1050PND08032011-01022011-0001.xml',
-            '1050PND08032011-01022011-0002.xml',
-            '1050PND08032011-01022011-0003.xml',
-            '1050PND08032011-01022011.zip',
-            '1050STA08032011-01022011.xml',
-            '1050STA08032011-01022011.zip',
-            '1050VBO08032011-01022011-0001.xml',
-            '1050VBO08032011-01022011-0002.xml',
-            '1050VBO08032011-01022011-0003.xml',
-            '1050VBO08032011-01022011-0004.xml',
-            '1050VBO08032011-01022011.zip',
-            '1050WPL08032011-01022011.xml',
-            '1050WPL08032011-01022011.zip',
-            '1050XXX08032011-01022011.zip',
-            'Leveringsdocument-BAG-Extract.xml'
-          ]);
-          done();
+        bag.extractZipfile(filename, unzipDir)
+          .then(() => {
+            expect(fs.readdirSync(unzipDir)).to.deep.equal([
+              '1050LIG08032011-01022011.xml',
+              '1050LIG08032011-01022011.zip',
+              '1050NUM08032011-01022011-0001.xml',
+              '1050NUM08032011-01022011-0002.xml',
+              '1050NUM08032011-01022011-0003.xml',
+              '1050NUM08032011-01022011.zip',
+              '1050OPR08032011-01022011.xml',
+              '1050OPR08032011-01022011.zip',
+              '1050PND08032011-01022011-0001.xml',
+              '1050PND08032011-01022011-0002.xml',
+              '1050PND08032011-01022011-0003.xml',
+              '1050PND08032011-01022011.zip',
+              '1050STA08032011-01022011.xml',
+              '1050STA08032011-01022011.zip',
+              '1050VBO08032011-01022011-0001.xml',
+              '1050VBO08032011-01022011-0002.xml',
+              '1050VBO08032011-01022011-0003.xml',
+              '1050VBO08032011-01022011-0004.xml',
+              '1050VBO08032011-01022011.zip',
+              '1050WPL08032011-01022011.xml',
+              '1050WPL08032011-01022011.zip',
+              '1050XXX08032011-01022011.zip',
+              'Leveringsdocument-BAG-Extract.xml'
+            ]);
+            console.log('Test done \n');
+            done();
+        })
+        .catch(err => {
+          throw(err);
         });
-      })
+
+      });
   });
 
   it('should invalidate an invalid feature', () => {
@@ -217,17 +223,13 @@ describe('histograph-data-bag', function() {
     );
   });
 
-/*
   it('should extract the building entries from all files in about 4 minutes', () => {
     var extractedBuildingsFile = path.join(__dirname, 'buildings.ndjson');
+    var unzipDir = path.join(__dirname, 'unzip').toString();
+
     if (fs.existsSync(extractedBuildingsFile)) fs.unlinkSync(extractedBuildingsFile);
 
-    return bag.extractBuildingsFromDir(path.join(__dirname, 'unzip'), extractedBuildingsFile)
-      .then(buildings => {
-        console.log('Result:', buildings);
-        return assert(buildings, true);
-      })
-  })
-*/
+    return expect(bag.extractBuildingsFromDir(unzipDir, extractedBuildingsFile)).to.be.fulfilled;
+  });
 
 });
