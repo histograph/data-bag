@@ -43,6 +43,7 @@
     "preset": "airbnb",
     "requireCamelCaseOrUpperCaseIdentifiers": null,
     "disallowMultipleVarDecl": true,
-    "requireMultipleVarDecl": null
+    "requireMultipleVarDecl": null,
+    "maxErrors": 1000
   }
 }
