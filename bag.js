@@ -123,22 +123,23 @@ function extractZipfile(zipfilename, extractdir, callback) {
 
 
 function extractBuildingsFromDir(dir, targetFile){
-    return new Promise(function(resolve, reject){
-        var filesToProcess = listBuildingFiles(dir);
+  return new Promise(function(resolve, reject){
+    var writeStream = fs.createWriteStream(targetFile);
 
-        var fileListStream = highland(filesToProcess)
-        fileListStream.each(file => {
-            console.log("Processing file", file);
-            extractBuildingsFromFile(file, targetFile)
-                .then(buildings => {
-                    highland(buildings).each(function (building) {
-                        fs.appendFileSync(targetFile, JSON.stringify(building) + "\n");
-                    });
-                });
-        });
+    var buildingsStream = highland(listBuildingFiles(dir));
+    buildingsStream.map(file => {
+        console.log(`Extracting buildings from file ${file} \n`);
+        return highland(extractBuildingsFromFile(file));
+      })
+      .parallel(10) //Do max 10 files at once
+      .sequence() //Flatten one level deep
+      .map(building => {
+        return JSON.stringify(building) + '\n';
+      })
+      .pipe(writeStream);
 
-        fileListStream.done( () => resolve(true));
-    });
+    writeStream.on('finish', () => resolve(true));
+  });
 }
 
 

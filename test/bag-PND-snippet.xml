@@ -1,5 +1,3 @@
-
-
 <?xml version="1.0" encoding="UTF-8"?>
 <xb:BAG-Extract-Deelbestand-LVC xmlns:xb="http://www.kadaster.nl/schemas/bag-verstrekkingen/extract-deelbestand-lvc/v20090901" xmlns:bag_LVC="http://www.kadaster.nl/schemas/imbag/lvc/v20090901" xmlns:bagtype="http://www.kadaster.nl/schemas/imbag/imbag-types/v20090901" xmlns:gml="http://www.opengis.net/gml" xmlns:nen5825="http://www.kadaster.nl/schemas/imbag/nen5825/v20090901" xmlns:product_LVC="http://www.kadaster.nl/schemas/bag-verstrekkingen/extract-producten-lvc/v20090901" xmlns:selecties-extract="http://www.kadaster.nl/schemas/bag-verstrekkingen/extract-selecties/v20090901" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.kadaster.nl/schemas/bag-verstrekkingen/extract-deelbestand-lvc/v20090901 http://www.kadaster.nl/schemas/bag-verstrekkingen/extract-deelbestand-lvc/v20090901/BagvsExtractDeelbestandExtractLvc-1.3.xsd">
     <xb:antwoord>

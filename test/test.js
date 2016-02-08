@@ -141,7 +141,7 @@ describe('histograph-data-bag', function(){
     it('should extract the building entries from a file', () => {
         var extractedBuildingsFile = path.join(__dirname, "buildings.ndjson");
 
-        return bag.extractBuildingsFromFile(path.join(__dirname, "bag-pand-snippet.xml"))
+        return bag.extractBuildingsFromFile(path.join(__dirname, "bag-PND-snippet.xml"))
             .then(buildings => {
                 console.log("result length:", buildings.length, "\n");
                 console.log("extractedBuildingsFile number 19:", JSON.stringify(buildings[18], null, 2), "\n");
@@ -183,7 +183,7 @@ describe('histograph-data-bag', function(){
         var extractedBuildingsFile = path.join(__dirname, "buildings.ndjson");
         if (fs.existsSync(extractedBuildingsFile)) fs.unlinkSync(extractedBuildingsFile);
 
-        return bag.extractBuildingsFromFile(path.join(__dirname, "bag-pand-snippet.xml"))
+        return bag.extractBuildingsFromFile(path.join(__dirname, "bag-PND-snippet.xml"))
             .then(buildings => {
                 H(buildings)
                     .each(building => {
@@ -208,15 +208,15 @@ describe('histograph-data-bag', function(){
         );
     });
 
-    it('should extract the building entries from all files', function(done){
-        var extractedBuildingsFile = path.join(__dirname, "buildings.ndjson");
-        if (fs.existsSync(extractedBuildingsFile)) fs.unlinkSync(extractedBuildingsFile);
+  it('should extract the building entries from all files in about 4 minutes', () => {
+    var extractedBuildingsFile = path.join(__dirname, 'buildings.ndjson');
+    if (fs.existsSync(extractedBuildingsFile)) fs.unlinkSync(extractedBuildingsFile);
 
-        return bag.extractBuildingsFromDir(path.join(__dirname, "unzip"), extractedBuildingsFile)
-            .then( buildings => {
-                    console.log("Result:", buildings);
-                    return assert(buildings, true);
-                })
-    })
+    return bag.extractBuildingsFromDir(path.join(__dirname, 'unzip'), extractedBuildingsFile)
+      .then( buildings => {
+        console.log('Result:', buildings);
+        return assert(buildings, true);
+      })
+  })
 
 });
