@@ -17,9 +17,13 @@ var config = require('../config.json');
 describe('histograph-data-bag', function describeTests() {
   this.timeout(800000);
 
-  it('should download and extract the test dataset', done => {
+  it('should progressing download and extract the test dataset', done => {
     bag.downloadDataFile(config.baseUrlTest, config.dataFileNameTest, __dirname)
       .then(filename => {
+        //TODO: use http://geodata.nationaalgeoregister.nl/inspireadressen/atom/inspireadressen.xml for file length
+        //Use request-progress to inform user of progress. Still a stub.
+        expect(progress).to.be.true;
+
         var unzipDir = path.join(__dirname, 'unzip');
 
         bag.extractZipfile(filename, unzipDir)

@@ -4,6 +4,7 @@ var fs          = require('fs');
 var path        = require('path');
 var Promise     = require('bluebird');
 var request     = require('request');
+var progress    = require('request-progress');
 var yauzl       = require('yauzl');
 var mkdirp      = require('mkdirp');
 var highland    = require('highland');
@@ -46,9 +47,9 @@ module.exports      = {
   listBuildingFiles: listBuildingFiles,
   extractBuildingsFromDir: extractBuildingsFromDir,
   steps: [
-    download/*,
+    download,
     unzip,
-    convert*/
+    convert
   ]
 };
 
@@ -63,6 +64,23 @@ function download(config, dir, writer, callback) {
       console.error(`${Date.now()} Download failed due to ${error}`);
       return callback(error);
     });
+}
+
+function downloadDataFile(baseURL, filename, dir) {
+  return new Promise((resolve, reject) => {
+    var fullZipFilePath = path.join(dir, filename);
+
+    progress(request
+      .get(baseURL + filename), {
+        throttle: 2000,
+        delay: 1000
+      })
+      .on('progress', state => {
+        console.log('progress', state);
+      })
+      .on('error', err => reject(err))
+      .on('finish', () => resolve(fullZipFilePath));
+  });
 }
 
 function unzip(config, dir, writer, callback) {
@@ -86,29 +104,13 @@ function convert(config, dir, writer, callback) {
     .catch((error) => callback(error));
 }
 
-function downloadDataFile(baseURL, filename, dir) {
-  return new Promise((resolve, reject) => {
-    var fullZipFilePath = path.join(dir, filename);
-
-    request
-      .get(baseURL + filename)
-      .pipe(fs.createWriteStream(fullZipFilePath))
-      .on('error', (err) => {
-        reject(err);
-      })
-      .on('finish', () => {
-        resolve(fullZipFilePath);
-      });
-  });
-}
-
 function extractZipfile(zipfilename, extractdir) {
   return new Promise((resolve, reject) => {
     console.log('extractdir: ', extractdir, '\n');
     mkdirp(extractdir);
 
     console.log('zipfilename: ', zipfilename, '\n');
-    yauzl.open(zipfilename, {lazyEntries: true}, (err, zipfile) => {
+    yauzl.open(zipfilename, { lazyEntries: true }, (err, zipfile) => {
       if (err) reject(err);
 
       zipfile.readEntry();
@@ -158,7 +160,7 @@ function extractZipfile(zipfilename, extractdir) {
 
       zipfile.on('end', () => resolve());
     });
-  })
+  });
 }
 
 function extractBuildingsFromDir(dir, targetFile) {
