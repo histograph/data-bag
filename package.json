@@ -45,6 +45,7 @@
     "disallowMultipleVarDecl": true,
     "requireMultipleVarDecl": null,
     "maxErrors": 1000,
-    "requirePaddingNewLinesAfterBlocks": null
+    "requirePaddingNewLinesAfterBlocks": null,
+    "requireTrailingComma": null
   }
 }

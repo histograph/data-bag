@@ -1,26 +1,46 @@
 'use strict';
 
-var fs = require('fs');
-var path = require('path');
-var Promise = require('bluebird');
-var request = require('request');
-var yauzl = require('yauzl');
-var mkdirp = require('mkdirp');
-var highland = require('highland');
-var GJV = require('geojson-validation');
-var proj4 = require('proj4');
-var reproject = require('reproject');
+var fs          = require('fs');
+var path        = require('path');
+var Promise     = require('bluebird');
+var request     = require('request');
+var yauzl       = require('yauzl');
+var mkdirp      = require('mkdirp');
+var highland    = require('highland');
+var GJV         = require('geojson-validation');
+var proj4       = require('proj4');
+var reproject   = require('reproject');
 
-var sax = require('sax');
-var saxpath = require('saxpath');
-var xml2js = require('xml2js');
+var sax         = require('sax');
+var saxpath     = require('saxpath');
+var xml2js      = require('xml2js');
 
-var jsts = require('jsts');
-var reader = new jsts.io.GeoJSONReader();
+var jsts        = require('jsts');
+var reader      = new jsts.io.GeoJSONReader();
 
-var bagconfig = require('./config.json');
+var workerFarm      = require('worker-farm');
+const NUM_CPUS      = require('os').cpus().length;
+const FARM_OPTIONS  = {
+  maxConcurrentWorkers: require('os').cpus().length,
+  maxCallsPerWorker: Infinity,
+  maxConcurrentCallsPerWorker: 1
+};
 
-module.exports = {
+var buildingsworkers = workerFarm(
+  FARM_OPTIONS,
+  require.resolve('./buildingsextractor.js'),
+  [
+    'extractBuildingsFromFile',
+    'validateCoords',
+    'joinGMLposlist',
+    'isValidGeoJSON',
+    'toWGS84'
+  ]
+);
+
+var bagconfig       = require('./config.json');
+
+module.exports      = {
   title: 'BAG',
   url: 'http://bag.kadaster.nl',
   downloadDataFile: downloadDataFile,
@@ -34,22 +54,31 @@ module.exports = {
   write: write,
   steps: [
     download,
-    convert,
+    unzip,
+    convert
   ]
 };
 
 function download(config, dir, writer, callback) {
-  downloadDataFile(bagconfig.baseDownloadUrl, bagconfig.datafilename, dir)
+  return downloadDataFile(config.baseDownloadUrl, bagconfig.datafilename, dir)
     .then((fullPath) => {
       console.log(`${Date.now()} download of ${fullPath} complete!`);
-      return extractZipfile(path.join(dir, bagconfig.datafilename), dir);
-    })
-    .then(() => {
-      console.log(`${Date.now()} extraction complete!`);
-      return callback
+      return callback;
     })
     .catch(error => {
-      console.error(`${Date.now()} Download and extraction failed due to ${error}`);
+      console.error(`${Date.now()} Download failed due to ${error}`);
+      return callback(error);
+    });
+}
+
+function unzip(config, dir, writer, callback) {
+  return extractZipfile(path.join(dir, config.datafilename), dir)
+    .then(() => {
+      console.log(`${Date.now()} extraction complete!`);
+      return callback;
+    })
+    .catch(error => {
+      console.error(`${Date.now()} Extraction failed due to ${error}`);
       return callback(error);
     });
 }
@@ -76,7 +105,7 @@ function downloadDataFile(baseURL, filename, dir) {
       .on('finish', () => {
         resolve(fullZipFilePath);
       });
-  })
+  });
 }
 
 function extractZipfile(zipfilename, extractdir) {
@@ -141,19 +170,21 @@ function extractZipfile(zipfilename, extractdir) {
 function extractBuildingsFromDir(dir, targetFile) {
   return new Promise((resolve, reject) => {
     var writeStream = fs.createWriteStream(targetFile);
-
     var buildingsStream = highland(listBuildingFiles(dir));
+    var wrappedExtractor = highland.wrapCallback(buildingsworkers.extractBuildingsFromFile);
 
     buildingsStream.map(file => {
       console.log(`Extracting buildings from file ${file} \n`);
-      return highland(extractBuildingsFromFile(file));
+      return highland(wrappedExtractor(file));
     })
-      .parallel(10) //Do max 10 files at once
+      .parallel(NUM_CPUS)
       .sequence() //Flatten one level deep
-      .errors(err => console.log(`Buildings stream threw error: ${err}`))
+      .errors(err => {
+        fs.writeFileSync(path.join(__dirname, 'error.log'), JSON.stringify(err));
+        return console.log(`Buildings stream threw error. Wrote error to error.log.`);
+      })
       .map(building => JSON.stringify(building) + '\n')
       .pipe(writeStream);
-
 
     writeStream.on('finish', () => resolve());
     writeStream.on('error', error => reject(error));
@@ -163,7 +194,7 @@ function extractBuildingsFromDir(dir, targetFile) {
 function listBuildingFiles(dir) {
   return fs.readdirSync(dir).filter(file => {
     return file.slice(-4) !== '.zip' && file.search('PND') > 0;
-  }).map(file => path.join(dir, file))
+  }).map(file => path.join(dir, file));
 }
 
 function extractBuildingsFromFile(file) {
@@ -216,7 +247,7 @@ function extractBuildingsFromFile(file) {
       resolve(buildings);
     });
 
-  })
+  });
 }
 
 function joinGMLposlist(posList, type) {

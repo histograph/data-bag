@@ -13,7 +13,7 @@ var expect = chai.expect;
 var bag = require('../bag.js');
 var config = require('../config.json');
 
-describe('histograph-data-bag', function() {
+describe('histograph-data-bag', function describeTests() {
   this.timeout(800000);
 
   it('should download and extract the test dataset', done => {
@@ -50,10 +50,10 @@ describe('histograph-data-bag', function() {
             ]);
             console.log('Test done \n');
             done();
-        })
-        .catch(err => {
-          throw(err);
-        });
+          })
+          .catch(err => {
+            throw(err);
+          });
 
       });
   });
@@ -61,7 +61,7 @@ describe('histograph-data-bag', function() {
   it('should invalidate an invalid feature', () => {
     var invalidFeature = {
       type: 'Feature',
-      properties: {name: 'My non-simple hourglass-shaped geometry'},
+      properties: { name: 'My non-simple hourglass-shaped geometry' },
       geometry: {
         type: 'Polygon',
         coordinates: [
@@ -96,7 +96,7 @@ describe('histograph-data-bag', function() {
       .catch(errs => {
         console.error('Validation errors:', errs);
         return expect(errs).to.be.not.null;
-      })
+      });
   });
 
   it('should reproject the coordinates to WGS84', () => {
@@ -147,9 +147,9 @@ describe('histograph-data-bag', function() {
           .then(valid => expect(valid).to.be.true)
           .catch(err => {
             console.log('geometry validation error:', err.stack);
-            return expect(err).to.be.null
+            return expect(err).to.be.null;
           });
-      })
+      });
 
   });
 
