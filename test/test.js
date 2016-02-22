@@ -11,6 +11,7 @@ var assert = chai.assert;
 var expect = chai.expect;
 
 var bag = require('../bag.js');
+var extractor = require('../buildingsextractor.js');
 var config = require('../config.json');
 
 describe('histograph-data-bag', function describeTests() {
@@ -66,32 +67,17 @@ describe('histograph-data-bag', function describeTests() {
         type: 'Polygon',
         coordinates: [
           [
-            [
-              5.614013671875,
-              52.47608904123904
-            ],
-            [
-              6.35009765625,
-              52.93539665862318
-            ],
-            [
-              6.8939208984375,
-              52.13011607781287
-            ],
-            [
-              7.239990234375,
-              52.65639394198803
-            ],
-            [
-              5.614013671875,
-              52.47608904123904
-            ]
+            [5.6, 52.4],
+            [6.3, 52.9],
+            [6.8, 52.1],
+            [7.2, 52.6],
+            [5.6, 52.4]
           ]
         ]
       }
     };
 
-    return bag.validateCoords(invalidFeature.geometry.coordinates, invalidFeature.geometry.type)
+    return extractor.validateCoords(invalidFeature.geometry.coordinates, invalidFeature.geometry.type)
       .then(valid => expect(valid).to.be.false)
       .catch(errs => {
         console.error('Validation errors:', errs);
@@ -133,17 +119,17 @@ describe('histograph-data-bag', function describeTests() {
       }
     };
 
-    expect(bag.toWGS84(geojson.geometry.coordinates[0][0])).to.deep.equal([4.834646702778442, 52.27019375226181]);
+    expect(extractor.toWGS84(geojson.geometry.coordinates[0][0])).to.deep.equal([4.834646702778442, 52.27019375226181]);
 
   });
 
   it('should join a gml-extracted position list to a WGS84 geojson-compatible one', () => {
     var testPosList = '116938.595 477068.148 0.0 116930.644 477071.854 0.0 116928.365 477066.959 0.0 116936.316 477063.253 0.0 116936.327 477063.277 0.0 116938.595 477068.148 0.0';
 
-    return bag.joinGMLposlist(testPosList, 'Polygon')
+    return extractor.joinGMLposlist(testPosList, 'Polygon')
       .then(geojsoncoords => {
         console.log(JSON.stringify(geojsoncoords, null, 2));
-        return bag.validateCoords(geojsoncoords, 'Polygon')
+        return extractor.validateCoords(geojsoncoords, 'Polygon')
           .then(valid => expect(valid).to.be.true)
           .catch(err => {
             console.log('geometry validation error:', err.stack);
@@ -153,62 +139,47 @@ describe('histograph-data-bag', function describeTests() {
 
   });
 
-  it('should extract the building entries from a file', () => {
+  it('should extract the building entries from a file', (done) => {
     var extractedBuildingsFile = path.join(__dirname, 'buildings.ndjson');
 
-    return bag.extractBuildingsFromFile(path.join(__dirname, 'bag-PND-snippet.xml'))
-      .then(buildings => {
-        console.log('result length:', buildings.length, '\n');
-        console.log('extractedBuildingsFile number 19:', JSON.stringify(buildings[18], null, 2), '\n');
+    extractor.extractBuildingsFromFile(path.join(__dirname, 'bag-PND-snippet.xml'), (err, buildings) => {
+      if (err) throw err;
 
-        return expect(buildings[18]).to.deep.equal({
-          uri: 'http://bag.kadaster.nl/pand/0362100100084298',
-          id: '0362100100084298',
-          bouwjaar: '2011',
-          geometry: {
-            coordinates: [[
-              [
-                4.8346467,
-                52.2701938
-              ],
-              [
-                4.8346579,
-                52.2702235
-              ],
-              [
-                4.8346023,
-                52.2702314
-              ],
-              [
-                4.8345937,
-                52.2702087
-              ],
-              [
-                4.8346467,
-                52.2701938
-              ]
-            ]],
-            type: 'Polygon'
-          }
-        });
+      console.log('result length:', buildings.length, '\n');
+      console.log('extractedBuildingsFile number 19:', JSON.stringify(buildings[18], null, 2), '\n');
+
+      expect(buildings[18]).to.deep.equal({
+        uri: 'http://bag.kadaster.nl/pand/0362100100084298',
+        id: '0362100100084298',
+        bouwjaar: '2011',
+        geometry: {
+          coordinates: [[
+            [
+              4.8346467,
+              52.2701938
+            ],
+            [
+              4.8346579,
+              52.2702235
+            ],
+            [
+              4.8346023,
+              52.2702314
+            ],
+            [
+              4.8345937,
+              52.2702087
+            ],
+            [
+              4.8346467,
+              52.2701938
+            ]
+          ]],
+          type: 'Polygon'
+        }
       });
-  });
-
-  it('should write all the data as ndjson', () => {
-    var extractedBuildingsFile = path.join(__dirname, 'buildings.ndjson');
-    if (fs.existsSync(extractedBuildingsFile)) fs.unlinkSync(extractedBuildingsFile);
-
-    return bag.extractBuildingsFromFile(path.join(__dirname, 'bag-PND-snippet.xml'))
-      .then(buildings => {
-        H(buildings)
-          .each(building => {
-            bag.write(building, extractedBuildingsFile);
-          })
-          .done(() => {
-            return expect(fs.existsSync(extractedBuildingsFile)).to.be.true;
-          });
-      });
-
+      done();
+    });
   });
 
   it('should find the building files', () => {
@@ -223,7 +194,7 @@ describe('histograph-data-bag', function describeTests() {
     );
   });
 
-  it('should extract the building entries from all files in about 4 minutes', () => {
+  it('should extract the building entries from all files in about 2 minutes', () => {
     var extractedBuildingsFile = path.join(__dirname, 'buildings.ndjson');
     var unzipDir = path.join(__dirname, 'unzip').toString();
 
