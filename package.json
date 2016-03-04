@@ -12,6 +12,7 @@
     "jscs": "^1.10.0",
     "jshint": "^2.6.0",
     "mocha": "^2.3.4",
+    "nock": "^7.2.2",
     "tape": "^3.4.0"
   },
   "scripts": {
@@ -46,6 +47,7 @@
     "disallowMultipleVarDecl": true,
     "requireMultipleVarDecl": null,
     "maxErrors": 1000,
+    "maximumLineLength": 150,
     "requirePaddingNewLinesAfterBlocks": null,
     "requireTrailingComma": null
   }

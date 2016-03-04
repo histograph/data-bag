@@ -42,6 +42,7 @@ var buildingsworkers = workerFarm(
 var config          = require('../config/index.js');
 
 module.exports      = {
+  extractDownloadSize: extractDownloadSize,
   downloadDataFile: downloadDataFile,
   extractZipfile: extractZipfile,
   listBuildingFiles: listBuildingFiles,
@@ -55,7 +56,9 @@ module.exports      = {
 
 function download(config, dir, writer, callback) {
   console.log(`Downloading...`);
-  return downloadDataFile(config.baseDownloadUrl, config.datafilename, dir)
+  var size = 1550788857;
+  return extractDownloadSize(config.feedURL)
+    .then(size => downloadDataFile(config.baseDownloadUrl, config.datafilename, dir, size))
     .then((fullPath) => {
       console.log(`${Date.now()} download of ${fullPath} complete!`);
       return callback;
@@ -66,9 +69,33 @@ function download(config, dir, writer, callback) {
     });
 }
 
-function downloadDataFile(baseURL, filename, dir) {
+function extractDownloadSize(atomURL) {
+  return new Promise((resolve, reject) => {
+    request(atomURL,
+      (err, response, body) => {
+        if (err) return reject(err);
+        if (!response) return reject(new Error(`No response returned from request to ${atomURL}`));
+        if (response.statusCode != 200) {
+          return reject(new Error(`Unexpected request to ${atomURL} response status ${response.statusCode}`));
+        }
+        if (!body) return reject(new Error(`The request to ${atomURL} did not return a response body`));
+
+        var parser = new xml2js.Parser();
+        parser.parseString(body, (err, result) => {
+          if (err) return reject(new Error(`Error parsing body ${body} \n ${err.stack}`));
+          console.log(`Length: ${JSON.stringify(result.feed.entry[0].link[0].$.length, null, 2)}`);
+          resolve(parseInt(result.feed.entry[0].link[0].$.length));
+        });
+      }
+    );
+  });
+}
+
+function downloadDataFile(baseURL, filename, dir, size) {
   return new Promise((resolve, reject) => {
     var fullZipFilePath = path.join(dir, filename);
+    console.log(`Getting ${baseURL + filename}:`);
+    console.log(`Total size: ${size}`);
 
     progress(request
       .get(baseURL + filename), {
@@ -76,10 +103,13 @@ function downloadDataFile(baseURL, filename, dir) {
         delay: 1000
       })
       .on('progress', state => {
-        console.log('progress', state);
+        console.log(`Download progress: ${((state.size.transferred / size) * 100).toFixed(0)}%`);
       })
       .on('error', err => reject(err))
-      .on('finish', () => resolve(fullZipFilePath));
+      .on('end', () => {
+        console.log(`Download progress: 100%`);
+        resolve(fullZipFilePath);
+      });
   });
 }
 
@@ -188,7 +218,9 @@ function extractBuildingsFromDir(dir, targetFile) {
 }
 
 function listBuildingFiles(dir) {
-  return fs.readdirSync(dir).filter(file => {
-    return file.slice(-4) !== '.zip' && file.search('PND') > 0;
-  }).map(file => path.join(dir, file));
+  return fs.readdirSync(dir)
+    .filter(file => file
+      .slice(-4) !== '.zip' && file.search('PND') > 0)
+      .map(file => path.join(dir, file)
+      );
 }

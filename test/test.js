@@ -3,6 +3,8 @@ var fs = require('fs');
 var path = require('path');
 var H = require('highland');
 
+var nock = require('nock');
+
 var chai = require('chai');
 var chaiAsPromised = require('chai-as-promised');
 chai.use(chaiAsPromised);
@@ -14,17 +16,30 @@ var bag = require('../bag.js');
 var extractor = require('../buildingsextractor.js');
 var config = require('../config.json');
 
+var mockedAtomXML = path.join(__dirname, 'mockups', 'atom_inspireadressen.xml');
+
 describe('histograph-data-bag', function describeTests() {
-  this.timeout(800000);
+  it('extracts the dataset size from the source description', () => {
+    console.log(mockedAtomXML);
+    nock('http://geodata.nationaalgeoregister.nl')
+      .defaultReplyHeaders({ 'Content-Type': 'text/xml' })
+      .get('/inspireadressen/atom/inspireadressen.xml')
+      .replyWithFile(200, mockedAtomXML);
 
-  it('should progressing download and extract the test dataset', done => {
-    bag.downloadDataFile(config.baseUrlTest, config.dataFileNameTest, __dirname)
+    return bag.extractDownloadSize(config.feedURL)
+      .then(size => expect(size).to.equal(1550788857));
+  });
+
+  this.timeout(30000);
+  it('extract the test dataset', done => {
+    nock('http://data.nlextract.nl')
+      .get('/bag/bron/BAG_Amstelveen_2011feb01.zip')
+      .replyWithFile(200, mockedAtomXML);
+
+    bag.downloadDataFile(config.baseUrlTest, config.dataFileNameTest, __dirname, 5746696)
       .then(filename => {
-        //TODO: use http://geodata.nationaalgeoregister.nl/inspireadressen/atom/inspireadressen.xml for file length
-        //Use request-progress to inform user of progress. Still a stub.
-        expect(progress).to.be.true;
-
         var unzipDir = path.join(__dirname, 'unzip');
+        console.log(`Unzipping to ${unzipDir}`);
 
         bag.extractZipfile(filename, unzipDir)
           .then(() => {
@@ -55,11 +70,7 @@ describe('histograph-data-bag', function describeTests() {
             ]);
             console.log('Test done \n');
             done();
-          })
-          .catch(err => {
-            throw(err);
           });
-
       });
   });
 
@@ -198,6 +209,8 @@ describe('histograph-data-bag', function describeTests() {
     );
   });
 
+/*
+  this.timeout(140000);
   it('should extract the building entries from all files in about 2 minutes', () => {
     var extractedBuildingsFile = path.join(__dirname, 'buildings.ndjson');
     var unzipDir = path.join(__dirname, 'unzip').toString();
@@ -206,5 +219,6 @@ describe('histograph-data-bag', function describeTests() {
 
     return expect(bag.extractBuildingsFromDir(unzipDir, extractedBuildingsFile)).to.be.fulfilled;
   });
+*/
 
 });

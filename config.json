@@ -1,4 +1,5 @@
 {
   "baseUrlTest" : "http://data.nlextract.nl/bag/bron/",
-  "dataFileNameTest" : "BAG_Amstelveen_2011feb01.zip"
+  "dataFileNameTest" : "BAG_Amstelveen_2011feb01.zip",
+  "feedURL" : "http://geodata.nationaalgeoregister.nl/inspireadressen/atom/inspireadressen.xml"
 }

@@ -1,0 +1,26 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:georss="http://www.georss.org/georss">
+  <id>http://geodata.nationaalgeoregister.nl/inspireadressen/atom/inspireadressen.xml</id>
+  <title type="text" xml:lang="nl">INSPIRE Download Service van BAG - Inspire Adressen</title>
+  <subtitle type="text" xml:lang="nl">Voorgedefinieerde dataset INSPIRE download service</subtitle>
+  <link href="http://geodata.nationaalgeoregister.nl/inspireadressen/atom/inspireadressen.xml" rel="self" type="application/atom+xml" title="Dataset Feed" hreflang="nl"/>
+  <link href="http://www.nationaalgeoregister.nl/geonetwork/srv/dut/xml.metadata.get?uuid=76091be7-358a-4a44-8182-b4139c96c6a4" rel="describedby" type="text/html"/>
+  <link href="http://geodata.nationaalgeoregister.nl/atom/index.xml" rel="up" type="application/atom+xml" title="Top Atom Download Service Feed" hreflang="nl"/>
+  <author>
+    <name>PDOK beheer</name>
+    <email>beheerPDOK@kadaster.nl</email>
+  </author>
+  <rights type="text">Copyright (c) 2012, Kadaster en Openbare Registers</rights>
+  <updated>2016-02-08T23:00:00.000Z</updated>
+  <entry>
+    <id>inspireadressen.zip</id>
+    <title type="text" xml:lang="nl">inspireadressen.zip</title>
+    <content type="text">Downloadgrootte: 1.4 GB</content>
+    <updated>2016-02-08T23:00:00.000Z</updated>
+    <link href="http://geodata.nationaalgeoregister.nl/inspireadressen/extract/inspireadressen.zip" rel="alternate" type="application/x-compressed" hreflang="nl" length="1550788857"/>
+    <link href="http://geodata.nationaalgeoregister.nl/inspireadressen/extract/inspireadressen.zip" hreflang="nl"/>
+    <rights type="text">Copyright (c) 2012, Kadaster en Openbare Registers</rights>
+    <category term="http://www.opengis.net/def/crs/EPSG/0/28992" label="Amersfoort / RD New"/>
+    <georss:polygon>50.6 3.1 50.6 7.3 53.7 7.3 53.7 3.1 50.6 3.1</georss:polygon>
+  </entry>
+</feed>
