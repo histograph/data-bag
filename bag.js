@@ -39,6 +39,18 @@ var buildingsworkers = workerFarm(
   ]
 );
 
+var addressworkers = workerFarm(
+  FARM_OPTIONS,
+  require.resolve('./addressextractor.js'),
+  [
+    'extractBuildingsFromFile',
+    'validateCoords',
+    'joinGMLposlist',
+    'isValidGeoJSON',
+    'toWGS84'
+  ]
+);
+
 var config          = require('../config/index.js');
 
 module.exports      = {
@@ -60,11 +72,11 @@ function download(config, dir, writer, callback) {
   return extractDownloadSize(config.feedURL)
     .then(size => downloadDataFile(config.baseDownloadUrl, config.datafilename, dir, size))
     .then((fullPath) => {
-      console.log(`${Date.now()} download of ${fullPath} complete!`);
+      console.log(`${new Date()} download of ${fullPath} complete!`);
       return callback;
     })
     .catch(error => {
-      console.error(`${Date.now()} Download failed due to ${error}`);
+      console.error(`${new Date()} Download failed due to ${error}`);
       return callback(error);
     });
 }
@@ -114,13 +126,18 @@ function downloadDataFile(baseURL, filename, dir, size) {
 }
 
 function unzip(config, dir, writer, callback) {
+  console.log(`WARNING, make sure you have at least 45 Gb of free disk space for extraction, or press Ctrl-c to abort.`);
+  console.log(`The unzip phase itself can take up to an hour and will extract about 4.000 XML files.`);
+  console.log(`Since the zipfile consists of sub-zipfiles of unknown size, there cannot be given an estimation of remaining time.`);
+  console.log(`The process will appear to be frozen for quite some time, especially on the ***PND***.zip file.`);
+  console.log(`However, this will at least spare you the logging of about 4000 file names.`);
   return extractZipfile(path.join(dir, config.datafilename), dir)
     .then(() => {
-      console.log(`${Date.now()} extraction complete!`);
+      console.log(`${new Date()} extraction complete!`);
       return callback;
     })
     .catch(error => {
-      console.error(`${Date.now()} Extraction failed due to ${error}`);
+      console.error(`${new Date()} Extraction failed due to ${error}`);
       return callback(error);
     });
 }
@@ -130,6 +147,7 @@ function convert(config, dir, writer, callback) {
   extractDir = path.resolve(extractDir);
 
   extractBuildingsFromDir(dir, path.join(extractDir, 'pand.ndjson'))
+    .then(() => extractAddressesFromDir(dir, path.join(extractDir, 'adres.ndjson')))
     .then(() => callback)
     .catch((error) => callback(error));
 }
@@ -221,6 +239,38 @@ function listBuildingFiles(dir) {
   return fs.readdirSync(dir)
     .filter(file => file
       .slice(-4) !== '.zip' && file.search('PND') > 0)
+      .map(file => path.join(dir, file)
+      );
+}
+
+function extractAddressesFromDir(dir, targetFile) {
+  return new Promise((resolve, reject) => {
+    var writeStream = fs.createWriteStream(targetFile);
+    var adressesStream = highland(listAddressFiles(dir));
+    var wrappedExtractor = highland.wrapCallback(addressworkers.extractAddressesFromFile);
+
+    adressesStream.map(file => {
+      console.log(`Extracting addresses from file ${file} \n`);
+      return highland(wrappedExtractor(file));
+    })
+      .parallel(NUM_CPUS - 1) //leave some juice
+      .sequence() //Flatten one level deep
+      .errors(err => {
+        fs.writeFileSync(path.join(__dirname, 'error.log'), JSON.stringify(err));
+        return console.log(`Addresses stream threw error. Wrote error to error.log.`);
+      })
+      .map(building => JSON.stringify(building) + '\n')
+      .pipe(writeStream);
+
+    writeStream.on('finish', () => resolve());
+    writeStream.on('error', error => reject(error));
+  });
+}
+
+function listAddressFiles(dir) {
+  return fs.readdirSync(dir)
+    .filter(file => file
+      .slice(-4) !== '.zip' && file.search('NUM') > 0)
       .map(file => path.join(dir, file)
       );
 }
