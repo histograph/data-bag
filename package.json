@@ -16,7 +16,7 @@
     "tape": "^3.4.0"
   },
   "scripts": {
-    "test": "mocha --compilers js:babel-register test/test.js"
+    "test": "mocha test/test.js"
   },
   "author": "Rein van t Veer",
   "license": "MIT",

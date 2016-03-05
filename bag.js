@@ -59,6 +59,8 @@ module.exports      = {
   extractZipfile: extractZipfile,
   listBuildingFiles: listBuildingFiles,
   extractBuildingsFromDir: extractBuildingsFromDir,
+  extractAddressesFromDir: extractAddressesFromDir,
+  listAddressFiles: listAddressFiles,
   steps: [
     download,
     unzip,
