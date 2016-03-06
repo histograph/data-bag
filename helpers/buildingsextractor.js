@@ -56,6 +56,10 @@ function extractBuildingsFromFile(inputFileName, callback) {
             uri: module.exports.url + '/pand/' + result['bag_LVC:Pand']['bag_LVC:identificatie'][0],
             id: result['bag_LVC:Pand']['bag_LVC:identificatie'][0],
             bouwjaar: result['bag_LVC:Pand']['bag_LVC:bouwjaar'][0],
+            startDate: result['bag_LVC:Pand']['bag_LVC:tijdvakgeldigheid'][0]['bagtype:begindatumTijdvakGeldigheid'] ?
+              result['bag_LVC:Pand']['bag_LVC:tijdvakgeldigheid'][0]['bagtype:begindatumTijdvakGeldigheid'][0] : null,
+            endDate: result['bag_LVC:Pand']['bag_LVC:tijdvakgeldigheid'][0]['bagtype:einddatumTijdvakGeldigheid'] ?
+              result['bag_LVC:Pand']['bag_LVC:tijdvakgeldigheid'][0]['bagtype:einddatumTijdvakGeldigheid'][0] : null,
             geometry: {
               type: 'Polygon',
               coordinates: polygon
@@ -104,9 +108,9 @@ function joinGMLposlist(posList, type) {
 
     if (type === 'Polygon') {
       //add extra level of array
-      var extralevel = [[[]]];
-      extralevel[0] = geojsonPosList;
-      resolve(extralevel);
+      var extraLevel = [[[]]];
+      extraLevel[0] = geojsonPosList;
+      resolve(extraLevel);
     }
 
     resolve(geojsonPosList);

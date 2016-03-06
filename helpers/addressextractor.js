@@ -26,7 +26,8 @@ module.exports = {
 
 function extractAddressesFromFile(inputFileName, callback) {
   console.log(`Processing ${inputFileName}`);
-  var addresses = [];
+  var addressNodes = [];
+  var addressEdges = [];
   var parser = new xml2js.Parser();
   var strict = true;
 
@@ -43,16 +44,31 @@ function extractAddressesFromFile(inputFileName, callback) {
         return callback(err);
       }
 
-      addresses.push({
+
+      addressNodes.push({
         uri: module.exports.url + '/nummeraanduiding/' + result['bag_LVC:Nummeraanduiding']['bag_LVC:identificatie'][0],
         id: result['bag_LVC:Nummeraanduiding']['bag_LVC:identificatie'][0],
-        huisnummer: result['bag_LVC:Nummeraanduiding']['bag_LVC:huisnummer'][0],
-        postcode: result['bag_LVC:Nummeraanduiding']['bag_LVC:postcode'][0],
-        startDate: result['bag_LVC:Nummeraanduiding']['bag_LVC:tijdvakgeldigheid']['bag:begindatumTijdvakGeldigheid'][0],
-        endDate: result['bag_LVC:Nummeraanduiding']['bag_LVC:tijdvakgeldigheid']['bag:einddatumTijdvakGeldigheid'][0] ?
-          result['bag_LVC:Nummeraanduiding']['bag_LVC:tijdvakgeldigheid']['bag:einddatumTijdvakGeldigheid'][0] : null
+        huisnummer: result['bag_LVC:Nummeraanduiding']['bag_LVC:huisnummer'] ?
+          result['bag_LVC:Nummeraanduiding']['bag_LVC:huisnummer'][0] : null,
+        huisletter: result['bag_LVC:Nummeraanduiding']['bag_LVC:huisletter'] ?
+          result['bag_LVC:Nummeraanduiding']['bag_LVC:huisletter'] : null,
+        postcode: result['bag_LVC:Nummeraanduiding']['bag_LVC:postcode'] ?
+          result['bag_LVC:Nummeraanduiding']['bag_LVC:postcode'][0] : null,
+        startDate: result['bag_LVC:Nummeraanduiding']['bag_LVC:tijdvakgeldigheid'][0]['bagtype:begindatumTijdvakGeldigheid'] ?
+          result['bag_LVC:Nummeraanduiding']['bag_LVC:tijdvakgeldigheid'][0]['bagtype:begindatumTijdvakGeldigheid'][0] : null,
+        endDate: result['bag_LVC:Nummeraanduiding']['bag_LVC:tijdvakgeldigheid'][0]['bagtype:einddatumTijdvakGeldigheid'] ?
+          result['bag_LVC:Nummeraanduiding']['bag_LVC:tijdvakgeldigheid'][0]['bagtype:einddatumTijdvakGeldigheid'][0] : null
       });
 
+      if (result['bag_LVC:Nummeraanduiding']['bag_LVC:gerelateerdeOpenbareRuimte']) {
+        console.log(result['bag_LVC:Nummeraanduiding']['bag_LVC:gerelateerdeOpenbareRuimte'][0]);
+
+        addressEdges.push({
+          from: module.exports.url + '/nummeraanduiding/' + result['bag_LVC:Nummeraanduiding']['bag_LVC:identificatie'][0],
+          to: module.exports.url + '/openbareruimte/' + result['bag_LVC:Nummeraanduiding']['bag_LVC:gerelateerdeOpenbareRuimte'][0]['bag_LVC:identificatie'],
+          type: 'hg:related'
+        });
+      }
     });
   });
 
@@ -65,8 +81,9 @@ function extractAddressesFromFile(inputFileName, callback) {
   });
 
   saxStream.on('end', () => {
-    console.log(`Returning ${addresses.length} buildings from ${inputFileName}`);
-    return callback(null, addresses);
+    console.log(`Returning ${addressNodes.length} address PITs from ${inputFileName}`);
+    console.log(`Returning ${addressEdges.length} address to street relations from ${inputFileName}`);
+    return callback(null, addressNodes, addressEdges);
   });
 
 }

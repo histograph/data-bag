@@ -13,14 +13,14 @@ var assert = chai.assert;
 var expect = chai.expect;
 
 var bag = require('../bag.js');
-var buildingsExtractor = require('../buildingsextractor.js');
-var addressesExtractor = require('../addressextractor.js');
+var buildingsExtractor = require('../helpers/buildingsextractor.js');
+var addressesExtractor = require('../helpers/addressextractor.js');
 var config = require('../config.json');
 
 var mockedAtomXML = path.join(__dirname, 'mockups', 'atom_inspireadressen.xml');
 
 describe('histograph-data-bag', function describeTests() {
-  describe('download phase', function () {
+  describe('download phase', function() {
     it('extracts the dataset size from the source description', () => {
       console.log(mockedAtomXML);
       nock('http://geodata.nationaalgeoregister.nl')
@@ -188,6 +188,8 @@ describe('histograph-data-bag', function describeTests() {
             uri: 'http://bag.kadaster.nl/pand/0362100100084298',
             id: '0362100100084298',
             bouwjaar: '2011',
+            startDate: '2011010500000000',
+            endDate: null,
             geometry: {
               coordinates: [[
                 [
@@ -248,13 +250,27 @@ describe('histograph-data-bag', function describeTests() {
       var extractedAddressesFile = path.join(__dirname, 'addresses.ndjson');
 
       it('should extract an address from a mocked snippet', done => {
-        addressesExtractor.extractAddressesFromFile(path.join(__dirname, 'mockups', 'bag-NUM-snippet.xml'), (err, addresses) => {
+        addressesExtractor.extractAddressesFromFile(path.join(__dirname, 'mockups', 'bag-NUM-snippet.xml'), (err, addressNodes, addressEdges) => {
           if (err) throw err;
 
-          console.log('result length:', addresses.length, '\n');
-          console.log('extractAddressesFromFile number 1:', JSON.stringify(addresses[0], null, 2), '\n');
+          console.log(`Result: ${addressNodes.length} addresses, ${addressEdges.length} related streets \n`);
 
-          expect(addresses[0]).to.deep.equal('so');
+          expect(addressNodes[1]).to.deep.equal({
+            endDate: null,
+            huisletter: null,
+            huisnummer: '12',
+            id: '0957200000300090',
+            postcode: '6041LZ',
+            startDate: '2010112200000000',
+            uri: 'http://bag.kadaster.nl/nummeraanduiding/0957200000300090'
+          });
+
+          expect(addressEdges[0]).to.deep.equal({
+            from: 'http://bag.kadaster.nl/nummeraanduiding/0957200000300090',
+            to: 'http://bag.kadaster.nl/openbareruimte/0957300000174823',
+            type: 'hg:related'
+          });
+
           done();
         });
       });

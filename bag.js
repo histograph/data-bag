@@ -29,7 +29,7 @@ const FARM_OPTIONS  = {
 
 var buildingsworkers = workerFarm(
   FARM_OPTIONS,
-  require.resolve('./buildingsextractor.js'),
+  require.resolve('./helpers/buildingsextractor.js'),
   [
     'extractBuildingsFromFile',
     'validateCoords',
@@ -41,7 +41,7 @@ var buildingsworkers = workerFarm(
 
 var addressworkers = workerFarm(
   FARM_OPTIONS,
-  require.resolve('./addressextractor.js'),
+  require.resolve('./helpers/addressextractor.js'),
   [
     'extractBuildingsFromFile',
     'validateCoords',
