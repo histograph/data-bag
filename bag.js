@@ -39,6 +39,12 @@ var addressworkers = workerFarm(
   ['extractFromFile']
 );
 
+var publicSpacesWorkers = workerFarm(
+  FARM_OPTIONS,
+  require.resolve('./helpers/publicspacesextractor.js'),
+  ['extractFromFile']
+);
+
 var config          = require('../config/index.js');
 
 module.exports      = {
@@ -47,9 +53,10 @@ module.exports      = {
   extractZipfile: extractZipfile,
   listBuildingFiles: listBuildingFiles,
   extractBuildingsFromDir: extractBuildingsFromDir,
-  extractAddressesFromDir: extractAddressesFromDir,
   listAddressFiles: listAddressFiles,
+  extractAddressesFromDir: extractAddressesFromDir,
   listPublicSpacesFiles: listPublicSpacesFiles,
+  extractPublicSpacesFromDir: extractPublicSpacesFromDir,
   steps: [
     download,
     unzip,
@@ -137,8 +144,11 @@ function convert(config, dir, writer, callback) {
   var extractDir = path.join(config.data.generatedDataDir, 'data-bag');
   extractDir = path.resolve(extractDir);
 
+  console.log(`WARNING, make sure you have at least 45 Gb of free disk space for conversion, or press Ctrl-c to abort.`);
+
   extractBuildingsFromDir(dir, path.join(extractDir, 'pand.ndjson'))
     .then(() => extractAddressesFromDir(dir, path.join(extractDir, 'adres.ndjson')))
+    .then(() => extractFromDirFromDir(dir, path.join(extractDir, 'pand.ndjson')))
     .then(() => callback)
     .catch((error) => callback(error));
 }
@@ -234,11 +244,19 @@ function listBuildingFiles(dir) {
       );
 }
 
+function listAddressFiles(dir) {
+  return fs.readdirSync(dir)
+    .filter(file => file
+      .slice(-4) !== '.zip' && file.search('NUM') > 0)
+    .map(file => path.join(dir, file)
+    );
+}
+
 function extractAddressesFromDir(dir, targetFile) {
   return new Promise((resolve, reject) => {
     var writeStream = fs.createWriteStream(targetFile);
     var adressesStream = highland(listAddressFiles(dir));
-    var wrappedExtractor = highland.wrapCallback(addressworkers.extractAddressesFromFile);
+    var wrappedExtractor = highland.wrapCallback(addressworkers.extractFromFile);
 
     adressesStream.map(file => {
       console.log(`Extracting addresses from file ${file} \n`);
@@ -258,14 +276,6 @@ function extractAddressesFromDir(dir, targetFile) {
   });
 }
 
-function listAddressFiles(dir) {
-  return fs.readdirSync(dir)
-    .filter(file => file
-      .slice(-4) !== '.zip' && file.search('NUM') > 0)
-      .map(file => path.join(dir, file)
-      );
-}
-
 function listPublicSpacesFiles(dir) {
   return fs.readdirSync(dir)
     .filter(file => file
@@ -274,3 +284,26 @@ function listPublicSpacesFiles(dir) {
       );
 }
 
+function extractPublicSpacesFromDir(dir, targetFile) {
+  return new Promise((resolve, reject) => {
+    var writeStream = fs.createWriteStream(targetFile);
+    var stream = highland(listPublicSpacesFiles(dir));
+    var wrappedExtractor = highland.wrapCallback(publicSpacesWorkers.extractFromFile);
+
+    stream.map(file => {
+      console.log(`Extracting addresses from file ${file} \n`);
+      return highland(wrappedExtractor(file));
+    })
+      .parallel(NUM_CPUS - 1) //leave some juice
+      .sequence() //Flatten one level deep
+      .errors(err => {
+        fs.writeFileSync(path.join(__dirname, 'error.log'), JSON.stringify(err));
+        return console.log(`Addresses stream threw error. Wrote error to error.log.`);
+      })
+      .map(publicSpace => JSON.stringify(publicSpace) + '\n')
+      .pipe(writeStream);
+
+    writeStream.on('finish', () => resolve());
+    writeStream.on('error', error => reject(error));
+  });
+}
