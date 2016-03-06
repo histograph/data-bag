@@ -13,6 +13,7 @@ var assert = chai.assert;
 var expect = chai.expect;
 
 var bag = require('../bag.js');
+var geometryTools = require('../helpers/geometrytools.js');
 var buildingsExtractor = require('../helpers/buildingsextractor.js');
 var addressesExtractor = require('../helpers/addressextractor.js');
 var config = require('../config.json');
@@ -105,7 +106,7 @@ describe('histograph-data-bag', function describeTests() {
           }
         };
 
-        return buildingsExtractor.validateCoords(invalidFeature.geometry.coordinates, invalidFeature.geometry.type)
+        return geometryTools.validateCoords(invalidFeature.geometry.coordinates, invalidFeature.geometry.type)
           .then(valid => expect(valid).to.be.false)
           .catch(errs => {
             console.error('Validation errors:', errs);
@@ -147,7 +148,7 @@ describe('histograph-data-bag', function describeTests() {
           }
         };
 
-        expect(buildingsExtractor.toWGS84(geojson.geometry.coordinates[0][0])).to.deep.equal([4.834646702778442, 52.27019375226181]);
+        expect(geometryTools.toWGS84(geojson.geometry.coordinates[0][0])).to.deep.equal([4.834646702778442, 52.27019375226181]);
 
       });
 
@@ -159,10 +160,10 @@ describe('histograph-data-bag', function describeTests() {
           '116936.327 477063.277 0.0 ' +
           '116938.595 477068.148 0.0';
 
-        return buildingsExtractor.joinGMLposlist(testPosList, 'Polygon')
+        return geometryTools.joinGMLposlist(testPosList, 'Polygon')
           .then(geojsoncoords => {
             console.log(JSON.stringify(geojsoncoords, null, 2));
-            return buildingsExtractor.validateCoords(geojsoncoords, 'Polygon')
+            return geometryTools.validateCoords(geojsoncoords, 'Polygon')
               .then(valid => expect(valid).to.be.true)
               .catch(err => {
                 console.log('geometry validation error:', err.stack);
@@ -274,10 +275,13 @@ describe('histograph-data-bag', function describeTests() {
           done();
         });
       });
+
+      describe('public space extraction', function() {
+
+      })
     });
 
   });
-
 
   /*
    this.timeout(140000);
