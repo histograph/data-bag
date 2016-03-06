@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xb:BAG-Extract-Deelbestand-LVC xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xb="http://www.kadaster.nl/schemas/bag-verstrekkingen/extract-deelbestand-lvc/v20090901" xmlns:bag_LVC="http://www.kadaster.nl/schemas/imbag/lvc/v20090901" xmlns:gml="http://www.opengis.net/gml" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:bagtype="http://www.kadaster.nl/schemas/imbag/imbag-types/v20090901" xmlns:nen5825="http://www.kadaster.nl/schemas/imbag/nen5825/v20090901" xmlns:product_LVC="http://www.kadaster.nl/schemas/bag-verstrekkingen/extract-producten-lvc/v20090901" xmlns:selecties-extract="http://www.kadaster.nl/schemas/bag-verstrekkingen/extract-selecties/v20090901" xsi:schemaLocation="http://www.kadaster.nl/schemas/bag-verstrekkingen/extract-deelbestand-lvc/v20090901 http://www.kadaster.nl/schemas/bag-verstrekkingen/extract-deelbestand-lvc/v20090901/BagvsExtractDeelbestandExtractLvc-1.4.xsd">
+    <xb:antwoord>
+        <xb:vraag>
+            <selecties-extract:Gebied-Registratief>
+                <selecties-extract:Gebied-NLD>
+                    <selecties-extract:GebiedIdentificatie>9999</selecties-extract:GebiedIdentificatie>
+                    <selecties-extract:GebiedNaam>Nederland</selecties-extract:GebiedNaam>
+                    <selecties-extract:gebiedTypeNederland>1</selecties-extract:gebiedTypeNederland>
+                </selecties-extract:Gebied-NLD>
+            </selecties-extract:Gebied-Registratief>
+            <selecties-extract:StandTechnischeDatum>20160208</selecties-extract:StandTechnischeDatum>
+        </xb:vraag>
+        <xb:producten>
+            <product_LVC:LVC-product>
+                <bag_LVC:OpenbareRuimte>
+                    <bag_LVC:identificatie>0003300000116985</bag_LVC:identificatie>
+                    <bag_LVC:aanduidingRecordInactief>N</bag_LVC:aanduidingRecordInactief>
+                    <bag_LVC:aanduidingRecordCorrectie>0</bag_LVC:aanduidingRecordCorrectie>
+                    <bag_LVC:openbareRuimteNaam>Abel Eppensstraat</bag_LVC:openbareRuimteNaam>
+                    <bag_LVC:officieel>N</bag_LVC:officieel>
+                    <bag_LVC:tijdvakgeldigheid>
+                        <bagtype:begindatumTijdvakGeldigheid>1956032800000000</bagtype:begindatumTijdvakGeldigheid>
+                    </bag_LVC:tijdvakgeldigheid>
+                    <bag_LVC:inOnderzoek>N</bag_LVC:inOnderzoek>
+                    <bag_LVC:openbareRuimteType>Weg</bag_LVC:openbareRuimteType>
+                    <bag_LVC:bron>
+                        <bagtype:documentdatum>19560328</bagtype:documentdatum>
+                        <bagtype:documentnummer>OR RB 28-03-1956</bagtype:documentnummer>
+                    </bag_LVC:bron>
+                    <bag_LVC:openbareruimteStatus>Naamgeving uitgegeven</bag_LVC:openbareruimteStatus>
+                    <bag_LVC:gerelateerdeWoonplaats>
+                        <bag_LVC:identificatie>3386</bag_LVC:identificatie>
+                    </bag_LVC:gerelateerdeWoonplaats>
+                </bag_LVC:OpenbareRuimte>
+                <bag_LVC:OpenbareRuimte>
+                    <bag_LVC:identificatie>0003300000116986</bag_LVC:identificatie>
+                    <bag_LVC:aanduidingRecordInactief>N</bag_LVC:aanduidingRecordInactief>
+                    <bag_LVC:aanduidingRecordCorrectie>0</bag_LVC:aanduidingRecordCorrectie>
+                    <bag_LVC:openbareRuimteNaam>Adamistraat</bag_LVC:openbareRuimteNaam>
+                    <bag_LVC:officieel>N</bag_LVC:officieel>
+                    <bag_LVC:tijdvakgeldigheid>
+                        <bagtype:begindatumTijdvakGeldigheid>1956032800000000</bagtype:begindatumTijdvakGeldigheid>
+                    </bag_LVC:tijdvakgeldigheid>
+                    <bag_LVC:inOnderzoek>N</bag_LVC:inOnderzoek>
+                    <bag_LVC:openbareRuimteType>Weg</bag_LVC:openbareRuimteType>
+                    <bag_LVC:bron>
+                        <bagtype:documentdatum>19560328</bagtype:documentdatum>
+                        <bagtype:documentnummer>OR RB 28-03-1956</bagtype:documentnummer>
+                    </bag_LVC:bron>
+                    <bag_LVC:openbareruimteStatus>Naamgeving uitgegeven</bag_LVC:openbareruimteStatus>
+                    <bag_LVC:gerelateerdeWoonplaats>
+                        <bag_LVC:identificatie>3386</bag_LVC:identificatie>
+                    </bag_LVC:gerelateerdeWoonplaats>
+                </bag_LVC:OpenbareRuimte>
+                <bag_LVC:OpenbareRuimte>
+                    <bag_LVC:identificatie>0003300000116987</bag_LVC:identificatie>
+                    <bag_LVC:aanduidingRecordInactief>N</bag_LVC:aanduidingRecordInactief>
+                    <bag_LVC:aanduidingRecordCorrectie>0</bag_LVC:aanduidingRecordCorrectie>
+                    <bag_LVC:openbareRuimteNaam>Alberdaweg</bag_LVC:openbareRuimteNaam>
+                    <bag_LVC:officieel>N</bag_LVC:officieel>
+                    <bag_LVC:tijdvakgeldigheid>
+                        <bagtype:begindatumTijdvakGeldigheid>1964042200000000</bagtype:begindatumTijdvakGeldigheid>
+                    </bag_LVC:tijdvakgeldigheid>
+                    <bag_LVC:inOnderzoek>N</bag_LVC:inOnderzoek>
+                    <bag_LVC:openbareRuimteType>Weg</bag_LVC:openbareRuimteType>
+                    <bag_LVC:bron>
+                        <bagtype:documentdatum>19640422</bagtype:documentdatum>
+                        <bagtype:documentnummer>OR RB 22-04-1964</bagtype:documentnummer>
+                    </bag_LVC:bron>
+                    <bag_LVC:openbareruimteStatus>Naamgeving uitgegeven</bag_LVC:openbareruimteStatus>
+                    <bag_LVC:gerelateerdeWoonplaats>
+                        <bag_LVC:identificatie>3386</bag_LVC:identificatie>
+                    </bag_LVC:gerelateerdeWoonplaats>
+                </bag_LVC:OpenbareRuimte>
+            </product_LVC:LVC-product>
+        </xb:producten>
+    </xb:antwoord>
+</xb:BAG-Extract-Deelbestand-LVC>

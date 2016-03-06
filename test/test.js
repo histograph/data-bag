@@ -16,6 +16,8 @@ var bag = require('../bag.js');
 var geometryTools = require('../helpers/geometrytools.js');
 var buildingsExtractor = require('../helpers/buildingsextractor.js');
 var addressesExtractor = require('../helpers/addressextractor.js');
+var publicSpacesExtractor = require('../helpers/publicspacesextractor.js');
+
 var config = require('../config.json');
 
 var mockedAtomXML = path.join(__dirname, 'mockups', 'atom_inspireadressen.xml');
@@ -175,11 +177,9 @@ describe('histograph-data-bag', function describeTests() {
 
     });
 
-    describe('buildings extraction', function () {
+    describe('buildings extraction', function() {
       it('should extract the building entries from a file', (done) => {
-        var extractedBuildingsFile = path.join(__dirname, 'buildings.ndjson');
-
-        buildingsExtractor.extractBuildingsFromFile(path.join(__dirname, 'mockups', 'bag-PND-snippet.xml'), (err, buildings) => {
+        buildingsExtractor.extractFromFile(path.join(__dirname, 'mockups', 'bag-PND-snippet.xml'), (err, buildings) => {
           if (err) throw err;
 
           console.log('result length:', buildings.length, '\n');
@@ -248,10 +248,8 @@ describe('histograph-data-bag', function describeTests() {
         );
       });
 
-      var extractedAddressesFile = path.join(__dirname, 'addresses.ndjson');
-
       it('should extract an address from a mocked snippet', done => {
-        addressesExtractor.extractAddressesFromFile(path.join(__dirname, 'mockups', 'bag-NUM-snippet.xml'), (err, addressNodes, addressEdges) => {
+        addressesExtractor.extractFromFile(path.join(__dirname, 'mockups', 'bag-NUM-snippet.xml'), (err, addressNodes, addressEdges) => {
           if (err) throw err;
 
           console.log(`Result: ${addressNodes.length} addresses, ${addressEdges.length} related streets \n`);
@@ -275,10 +273,45 @@ describe('histograph-data-bag', function describeTests() {
           done();
         });
       });
+    });
 
-      describe('public space extraction', function() {
+    describe('public spaces extraction', function() {
+      it('should find the public spaces files', () => {
+        var addressfiles = bag.listPublicSpacesFiles(path.join(__dirname, 'unzip'));
+        console.log('Files:', addressfiles);
+        return expect(addressfiles).to.deep.equal(
+          [
+            path.join(__dirname, 'unzip', '1050OPR08032011-01022011.xml')
+          ]
+        );
+      });
 
-      })
+      it('should extract the public spaces from the snippet', done => {
+        publicSpacesExtractor.extractFromFile(path.join(__dirname, 'mockups', 'bag-OPR-snippet.xml'), (err, publicSpaceNodes, publicSpaceEdges) => {
+          if (err) throw err;
+
+          console.log(`Result: ${publicSpaceNodes.length} addresses, ${publicSpaceEdges.length} related streets \n`);
+          expect(publicSpaceNodes.length).to.equal(3);
+          expect(publicSpaceEdges.length).to.equal(3);
+
+          expect(publicSpaceNodes[0]).to.deep.equal({
+            uri: 'http://bag.kadaster.nl/openbareruimte/0003300000116985',
+            id: '0003300000116985',
+            name: 'Abel Eppensstraat',
+            startDate: '1956032800000000',
+            endDate: null
+          });
+
+          expect(publicSpaceEdges[0]).to.deep.equal({
+            from: 'http://bag.kadaster.nl/openbareruimte/0003300000116985',
+            to: 'http://bag.kadaster.nl/woonplaats/3386',
+            type: 'hg:liesIn'
+          });
+
+          done();
+        });
+      });
+
     });
 
   });

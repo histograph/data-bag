@@ -30,25 +30,13 @@ const FARM_OPTIONS  = {
 var buildingsworkers = workerFarm(
   FARM_OPTIONS,
   require.resolve('./helpers/buildingsextractor.js'),
-  [
-    'extractBuildingsFromFile',
-    'validateCoords',
-    'joinGMLposlist',
-    'isValidGeoJSON',
-    'toWGS84'
-  ]
+  ['extractFromFile']
 );
 
 var addressworkers = workerFarm(
   FARM_OPTIONS,
   require.resolve('./helpers/addressextractor.js'),
-  [
-    'extractBuildingsFromFile',
-    'validateCoords',
-    'joinGMLposlist',
-    'isValidGeoJSON',
-    'toWGS84'
-  ]
+  ['extractFromFile']
 );
 
 var config          = require('../config/index.js');
@@ -61,6 +49,7 @@ module.exports      = {
   extractBuildingsFromDir: extractBuildingsFromDir,
   extractAddressesFromDir: extractAddressesFromDir,
   listAddressFiles: listAddressFiles,
+  listPublicSpacesFiles: listPublicSpacesFiles,
   steps: [
     download,
     unzip,
@@ -217,7 +206,7 @@ function extractBuildingsFromDir(dir, targetFile) {
   return new Promise((resolve, reject) => {
     var writeStream = fs.createWriteStream(targetFile);
     var buildingsStream = highland(listBuildingFiles(dir));
-    var wrappedExtractor = highland.wrapCallback(buildingsworkers.extractBuildingsFromFile);
+    var wrappedExtractor = highland.wrapCallback(buildingsworkers.extractFromFile);
 
     buildingsStream.map(file => {
       console.log(`Extracting buildings from file ${file} \n`);
@@ -276,3 +265,12 @@ function listAddressFiles(dir) {
       .map(file => path.join(dir, file)
       );
 }
+
+function listPublicSpacesFiles(dir) {
+  return fs.readdirSync(dir)
+    .filter(file => file
+      .slice(-4) !== '.zip' && file.search('OPR') > 0)
+      .map(file => path.join(dir, file)
+      );
+}
+

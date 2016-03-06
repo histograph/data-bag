@@ -21,10 +21,10 @@ var projDefs    = {
 module.exports = {
   title: 'BAG',
   url: 'http://bag.kadaster.nl',
-  extractAddressesFromFile: extractAddressesFromFile
+  extractFromFile: extractFromFile
 };
 
-function extractAddressesFromFile(inputFileName, callback) {
+function extractFromFile(inputFileName, callback) {
   console.log(`Processing ${inputFileName}`);
   var addressNodes = [];
   var addressEdges = [];

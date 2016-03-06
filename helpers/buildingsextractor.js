@@ -1,21 +1,17 @@
 'use strict';
-var Promise = require('bluebird');
 var xml2js = require('xml2js');
 var fs = require('fs');
-var sax         = require('sax');
+var sax = require('sax');
 var saxpath = require('saxpath');
-
-var reproject = require('reproject');
-var jsts = require('jsts');
 var geometryTools = require('./geometrytools.js');
 
 module.exports = {
   title: 'BAG',
   url: 'http://bag.kadaster.nl',
-  extractBuildingsFromFile: extractBuildingsFromFile
+  extractFromFile: extractFromFile
 };
 
-function extractBuildingsFromFile(inputFileName, callback) {
+function extractFromFile(inputFileName, callback) {
   console.log(`Processing ${inputFileName}`);
   var buildings = [];
   var parser = new xml2js.Parser();
