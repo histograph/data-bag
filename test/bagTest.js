@@ -209,16 +209,14 @@ describe('histograph-data-bag', function describeTests() {
 
   });
 
-  /*
-   this.timeout(140000);
-   it('should extract the building entries from all files in about 2 minutes', () => {
-   var extractedBuildingsFile = path.join(__dirname, 'buildings.ndjson');
-   var unzipDir = path.join(__dirname, 'unzip').toString();
+  this.timeout(140000);
+  it('should extract the entries from all files in about 2 minutes', () => {
+    var extractedBuildingsFile = path.join(__dirname, 'buildings.ndjson');
+    var unzipDir = path.join(__dirname, 'unzip').toString();
 
-   if (fs.existsSync(extractedBuildingsFile)) fs.unlinkSync(extractedBuildingsFile);
+    if (fs.existsSync(extractedBuildingsFile)) fs.unlinkSync(extractedBuildingsFile);
 
-   return expect(bag.extractBuildingsFromDir(unzipDir, extractedBuildingsFile)).to.be.fulfilled;
-   });
-   */
+    return expect(bag.extractBuildingsFromDir(unzipDir, extractedBuildingsFile)).to.be.fulfilled;
+  });
 
 });
