@@ -51,11 +51,9 @@ module.exports      = {
   extractDownloadSize: extractDownloadSize,
   downloadDataFile: downloadDataFile,
   extractZipfile: extractZipfile,
-  listBuildingFiles: listBuildingFiles,
+  mapFilesToJobs: mapFilesToJobs,
   extractBuildingsFromDir: extractBuildingsFromDir,
-  listAddressFiles: listAddressFiles,
   extractAddressesFromDir: extractAddressesFromDir,
-  listPublicSpacesFiles: listPublicSpacesFiles,
   extractPublicSpacesFromDir: extractPublicSpacesFromDir,
   steps: [
     download,
@@ -146,9 +144,10 @@ function convert(config, dir, writer, callback) {
 
   console.log(`WARNING, make sure you have at least 45 Gb of free disk space for conversion, or press Ctrl-c to abort.`);
 
-  extractBuildingsFromDir(dir, path.join(extractDir, 'pand.ndjson'))
-    .then(() => extractAddressesFromDir(dir, path.join(extractDir, 'adres.ndjson')))
-    .then(() => extractFromDirFromDir(dir, path.join(extractDir, 'pand.ndjson')))
+  var jobs = mapFilesToJobs(dir, extractDir);
+
+  extractBuildingsFromDir(dir, path.join(extractDir, 'pand.pits.ndjson'))
+    .then(() => extractAddressesFromDir(dir, path.join(extractDir, 'adres.pits.ndjson')))
     .then(() => callback)
     .catch((error) => callback(error));
 }
@@ -212,6 +211,40 @@ function extractZipfile(zipfilename, extractdir) {
   });
 }
 
+function mapFilesToJobs(dir, extractDir) {
+  var fileTypes = {
+    PND: {
+      converter: buildingsworkers,
+      outputPITsFile: 'pand.pits.ndjson',
+      outputRelationsFile: 'pand.relations.ndjson'
+    },
+    NUM: {
+      converter: addressworkers,
+      outputPITsFile: 'adres.pits.ndjson',
+      outputRelationsFile: 'adres.relations.ndjson'
+    },
+    OPR: {
+      converter: publicSpacesWorkers,
+      outputPITsFile: 'openbareruimte.pits.ndjson',
+      outputRelationsFile: 'openbareruimte.relations.ndjson'
+    }
+  };
+
+  return fs.readdirSync(dir)
+    .filter(file => file.slice(-4) === '.xml')
+    .map(file => {
+      var type = file.slice(4, 7);
+      var job = {};
+      if (!fileTypes[type]) return null;
+      job.converter = fileTypes[type].converter;
+      job.inputFile = path.resolve(path.join(dir, file));
+      job.outputPITsFile = path.resolve(path.join(extractDir, fileTypes[type].outputPITsFile));
+      job.outputRelationsFile = path.resolve(path.join(extractDir, fileTypes[type].outputRelationsFile));
+      return job;
+    })
+    .filter(job => (job));
+}
+
 function extractBuildingsFromDir(dir, targetFile) {
   return new Promise((resolve, reject) => {
     var writeStream = fs.createWriteStream(targetFile);
@@ -236,22 +269,6 @@ function extractBuildingsFromDir(dir, targetFile) {
   });
 }
 
-function listBuildingFiles(dir) {
-  return fs.readdirSync(dir)
-    .filter(file => file
-      .slice(-4) !== '.zip' && file.search('PND') > 0)
-      .map(file => path.join(dir, file)
-      );
-}
-
-function listAddressFiles(dir) {
-  return fs.readdirSync(dir)
-    .filter(file => file
-      .slice(-4) !== '.zip' && file.search('NUM') > 0)
-    .map(file => path.join(dir, file)
-    );
-}
-
 function extractAddressesFromDir(dir, targetFile) {
   return new Promise((resolve, reject) => {
     var writeStream = fs.createWriteStream(targetFile);
@@ -274,14 +291,6 @@ function extractAddressesFromDir(dir, targetFile) {
     writeStream.on('finish', () => resolve());
     writeStream.on('error', error => reject(error));
   });
-}
-
-function listPublicSpacesFiles(dir) {
-  return fs.readdirSync(dir)
-    .filter(file => file
-      .slice(-4) !== '.zip' && file.search('OPR') > 0)
-      .map(file => path.join(dir, file)
-      );
 }
 
 function extractPublicSpacesFromDir(dir, targetFile) {
