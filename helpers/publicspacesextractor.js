@@ -3,6 +3,8 @@ var xml2js = require('xml2js');
 var fs = require('fs');
 var sax = require('sax');
 var saxpath = require('saxpath');
+var highland = require('highland');
+var writer = require('./bagwriter.js');
 
 module.exports = {
   title: 'BAG',
@@ -10,10 +12,10 @@ module.exports = {
   extractFromFile: extractFromFile
 };
 
-function extractFromFile(inputFileName, callback) {
+function extractFromFile(inputFileName, outputPITsFile, outputRelationsFile, callback) {
   console.log(`Processing ${inputFileName}`);
-  var publicSpaceNodes = [];
-  var publicSpaceEdges = [];
+  var nodes = [];
+  var edges = [];
   var parser = new xml2js.Parser();
   var strict = true;
 
@@ -31,7 +33,7 @@ function extractFromFile(inputFileName, callback) {
       }
 
       if (result['bag_LVC:OpenbareRuimte']['bag_LVC:openbareRuimteType'][0] === 'Weg') {
-        publicSpaceNodes.push({
+        nodes.push({
           uri: module.exports.url + '/openbareruimte/' + result['bag_LVC:OpenbareRuimte']['bag_LVC:identificatie'][0],
           id: result['bag_LVC:OpenbareRuimte']['bag_LVC:identificatie'][0],
           name: result['bag_LVC:OpenbareRuimte']['bag_LVC:openbareRuimteNaam'] ?
@@ -42,11 +44,11 @@ function extractFromFile(inputFileName, callback) {
             result['bag_LVC:OpenbareRuimte']['bag_LVC:tijdvakgeldigheid'][0]['bagtype:einddatumTijdvakGeldigheid'][0] : null
         });
 
-        publicSpaceEdges.push({
+        edges.push({
           from: module.exports.url + '/openbareruimte/' + result['bag_LVC:OpenbareRuimte']['bag_LVC:identificatie'][0],
           to: module.exports.url + '/woonplaats/' + result['bag_LVC:OpenbareRuimte']['bag_LVC:gerelateerdeWoonplaats'][0]['bag_LVC:identificatie'],
           type: 'hg:liesIn'
-        })
+        });
       }
 
     });
@@ -60,9 +62,9 @@ function extractFromFile(inputFileName, callback) {
     this._parser.resume();
   });
 
-  saxStream.on('end', () => {
-    console.log(`Returning ${publicSpaceNodes.length} public space PITs and ${publicSpaceEdges.length} public space relations from ${inputFileName}`);
-    return callback(null, publicSpaceNodes, publicSpaceEdges);
-  });
+  saxStream.on('end', () => writer.write(nodes, edges, outputPITsFile, outputRelationsFile)
+    .then(result => callback(null, result))
+    .catch(err => callback(err))
+  );
 
 }

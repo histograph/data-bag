@@ -1,22 +1,10 @@
 'use strict';
-var Promise = require('bluebird');
 var xml2js = require('xml2js');
 var fs = require('fs');
-var sax         = require('sax');
+var sax = require('sax');
 var saxpath = require('saxpath');
-
-var GJV = require('geojson-validation');
-var proj4 = require('proj4');
-var reproject = require('reproject');
-var jsts = require('jsts');
-var reader = new jsts.io.GeoJSONReader();
-var projDefs    = {
-  'EPSG:2400': '+lon_0=15.808277777799999 +lat_0=0.0 +k=1.0 +x_0=1500000.0 +y_0=0.0 +proj=tmerc +ellps=bessel +units=m +towgs84=414.1,41.3,603.1,-0.855,2.141,-7.023,0 +no_defs',
-  'EPSG:3006': '+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs',
-  'EPSG:4326': '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs',
-  'EPSG:3857': '+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs',
-  'EPSG:28992': '+proj=sterea +lat_0=52.15616055555555 +lon_0=5.38763888888889 +k=0.9999079 +x_0=155000 +y_0=463000 +ellps=bessel +towgs84=565.237,50.0087,465.658,-0.406857,0.350733,-1.87035,4.0812 +units=m +no_defs'
-};
+var highland = require('highland');
+var writer = require('./bagwriter.js');
 
 module.exports = {
   title: 'BAG',
@@ -24,10 +12,10 @@ module.exports = {
   extractFromFile: extractFromFile
 };
 
-function extractFromFile(inputFileName, callback) {
+function extractFromFile(inputFileName, outputPITsFile, outputRelationsFile, callback) {
   console.log(`Processing ${inputFileName}`);
-  var addressNodes = [];
-  var addressEdges = [];
+  var nodes = [];
+  var edges = [];
   var parser = new xml2js.Parser();
   var strict = true;
 
@@ -44,8 +32,7 @@ function extractFromFile(inputFileName, callback) {
         return callback(err);
       }
 
-
-      addressNodes.push({
+      nodes.push({
         uri: module.exports.url + '/nummeraanduiding/' + result['bag_LVC:Nummeraanduiding']['bag_LVC:identificatie'][0],
         id: result['bag_LVC:Nummeraanduiding']['bag_LVC:identificatie'][0],
         huisnummer: result['bag_LVC:Nummeraanduiding']['bag_LVC:huisnummer'] ?
@@ -61,9 +48,7 @@ function extractFromFile(inputFileName, callback) {
       });
 
       if (result['bag_LVC:Nummeraanduiding']['bag_LVC:gerelateerdeOpenbareRuimte']) {
-        console.log(result['bag_LVC:Nummeraanduiding']['bag_LVC:gerelateerdeOpenbareRuimte'][0]);
-
-        addressEdges.push({
+        edges.push({
           from: module.exports.url + '/nummeraanduiding/' + result['bag_LVC:Nummeraanduiding']['bag_LVC:identificatie'][0],
           to: module.exports.url + '/openbareruimte/' + result['bag_LVC:Nummeraanduiding']['bag_LVC:gerelateerdeOpenbareRuimte'][0]['bag_LVC:identificatie'],
           type: 'hg:related'
@@ -80,10 +65,9 @@ function extractFromFile(inputFileName, callback) {
     this._parser.resume();
   });
 
-  saxStream.on('end', () => {
-    console.log(`Returning ${addressNodes.length} address PITs from ${inputFileName}`);
-    console.log(`Returning ${addressEdges.length} address to street relations from ${inputFileName}`);
-    return callback(null, addressNodes, addressEdges);
-  });
+  saxStream.on('end', () => writer.write(nodes, edges, outputPITsFile, outputRelationsFile)
+    .then(result => callback(null, result))
+    .catch(err => callback(err))
+  );
 
 }

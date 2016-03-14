@@ -8,16 +8,10 @@ var progress    = require('request-progress');
 var yauzl       = require('yauzl');
 var mkdirp      = require('mkdirp');
 var highland    = require('highland');
-var GJV         = require('geojson-validation');
-var proj4       = require('proj4');
-var reproject   = require('reproject');
 
 var sax         = require('sax');
 var saxpath     = require('saxpath');
 var xml2js      = require('xml2js');
-
-var jsts        = require('jsts');
-var reader      = new jsts.io.GeoJSONReader();
 
 var workerFarm      = require('worker-farm');
 const NUM_CPUS      = require('os').cpus().length;
@@ -35,7 +29,7 @@ var buildingsworkers = workerFarm(
 
 var addressworkers = workerFarm(
   FARM_OPTIONS,
-  require.resolve('./helpers/addressextractor.js'),
+  require.resolve('./helpers/addressesextractor.js'),
   ['extractFromFile']
 );
 
@@ -45,16 +39,17 @@ var publicSpacesWorkers = workerFarm(
   ['extractFromFile']
 );
 
-var config          = require('../config/index.js');
+var config = require('../config/index.js');
 
-module.exports      = {
+module.exports = {
+  download: download,
   extractDownloadSize: extractDownloadSize,
   downloadDataFile: downloadDataFile,
+  unzip: unzip,
   extractZipfile: extractZipfile,
+  convert: convert,
   mapFilesToJobs: mapFilesToJobs,
-  extractBuildingsFromDir: extractBuildingsFromDir,
-  extractAddressesFromDir: extractAddressesFromDir,
-  extractPublicSpacesFromDir: extractPublicSpacesFromDir,
+  mkdir: mkdir,
   steps: [
     download,
     unzip,
@@ -64,7 +59,6 @@ module.exports      = {
 
 function download(config, dir, writer, callback) {
   console.log(`Downloading...`);
-  var size = 1550788857;
   return extractDownloadSize(config.feedURL)
     .then(size => downloadDataFile(config.baseDownloadUrl, config.datafilename, dir, size))
     .then((fullPath) => {
@@ -138,20 +132,6 @@ function unzip(config, dir, writer, callback) {
     });
 }
 
-function convert(config, dir, writer, callback) {
-  var extractDir = path.join(config.data.generatedDataDir, 'data-bag');
-  extractDir = path.resolve(extractDir);
-
-  console.log(`WARNING, make sure you have at least 45 Gb of free disk space for conversion, or press Ctrl-c to abort.`);
-
-  var jobs = mapFilesToJobs(dir, extractDir);
-
-  extractBuildingsFromDir(dir, path.join(extractDir, 'pand.pits.ndjson'))
-    .then(() => extractAddressesFromDir(dir, path.join(extractDir, 'adres.pits.ndjson')))
-    .then(() => callback)
-    .catch((error) => callback(error));
-}
-
 function extractZipfile(zipfilename, extractdir) {
   return new Promise((resolve, reject) => {
     console.log('extractdir: ', extractdir, '\n');
@@ -211,6 +191,46 @@ function extractZipfile(zipfilename, extractdir) {
   });
 }
 
+function convert(config, dir, writer, callback) {
+  var extractDir = path.join(config.data.generatedDataDir, 'data-bag');
+  console.log(`WARNING, make sure you have at least 45 Gb of free disk space for conversion, or press Ctrl-c to abort.`);
+  var jobs = mapFilesToJobs(dir, extractDir);
+
+  mkdir(extractDir)
+    .then(() => {
+      var jobStream = highland(jobs);
+
+      jobStream
+        .map(job => {
+          console.log(`Processing ${job.inputFile} to output to ${job.outputPITsFile} and ${job.outputRelationsFile}`);
+          return highland.wrapCallback(job.converter.extractFromFile(job.inputFile, job.outputPITsFile, job.outputRelationsFile));
+        })
+        .parallel(NUM_CPUS - 1)
+        .errors(err => {
+          fs.appendFileSync(path.join(__dirname, 'error.log'), JSON.stringify(err));
+          return console.log(`Stream threw error. Wrote error to error.log.`);
+        })
+        .toArray(result => {
+          console.log(`Done processing all files!`);
+          return callback(null, result)
+        });
+
+    })
+    .catch(err => callback(err, null));
+}
+
+function mkdir(path) {
+  return new Promise((resolve, reject) => {
+    mkdirp(path, err => {
+      if (err) {
+        console.log(`Error during directory creation: ${err}`);
+        reject(err);
+      }
+      resolve()
+    });
+  });
+}
+
 function mapFilesToJobs(dir, extractDir) {
   var fileTypes = {
     PND: {
@@ -243,76 +263,4 @@ function mapFilesToJobs(dir, extractDir) {
       return job;
     })
     .filter(job => (job));
-}
-
-function extractBuildingsFromDir(dir, targetFile) {
-  return new Promise((resolve, reject) => {
-    var writeStream = fs.createWriteStream(targetFile);
-    var buildingsStream = highland(listBuildingFiles(dir));
-    var wrappedExtractor = highland.wrapCallback(buildingsworkers.extractFromFile);
-
-    buildingsStream.map(file => {
-      console.log(`Extracting buildings from file ${file} \n`);
-      return highland(wrappedExtractor(file));
-    })
-      .parallel(NUM_CPUS - 1) //leave some juice
-      .sequence() //Flatten one level deep
-      .errors(err => {
-        fs.writeFileSync(path.join(__dirname, 'error.log'), JSON.stringify(err));
-        return console.log(`Buildings stream threw error. Wrote error to error.log.`);
-      })
-      .map(building => JSON.stringify(building) + '\n')
-      .pipe(writeStream);
-
-    writeStream.on('finish', () => resolve());
-    writeStream.on('error', error => reject(error));
-  });
-}
-
-function extractAddressesFromDir(dir, targetFile) {
-  return new Promise((resolve, reject) => {
-    var writeStream = fs.createWriteStream(targetFile);
-    var adressesStream = highland(listAddressFiles(dir));
-    var wrappedExtractor = highland.wrapCallback(addressworkers.extractFromFile);
-
-    adressesStream.map(file => {
-      console.log(`Extracting addresses from file ${file} \n`);
-      return highland(wrappedExtractor(file));
-    })
-      .parallel(NUM_CPUS - 1) //leave some juice
-      .sequence() //Flatten one level deep
-      .errors(err => {
-        fs.writeFileSync(path.join(__dirname, 'error.log'), JSON.stringify(err));
-        return console.log(`Addresses stream threw error. Wrote error to error.log.`);
-      })
-      .map(building => JSON.stringify(building) + '\n')
-      .pipe(writeStream);
-
-    writeStream.on('finish', () => resolve());
-    writeStream.on('error', error => reject(error));
-  });
-}
-
-function extractPublicSpacesFromDir(dir, targetFile) {
-  return new Promise((resolve, reject) => {
-    var writeStream = fs.createWriteStream(targetFile);
-    var stream = highland(listPublicSpacesFiles(dir));
-    var wrappedExtractor = highland.wrapCallback(publicSpacesWorkers.extractFromFile);
-
-    stream.map(file => {
-      console.log(`Extracting addresses from file ${file} \n`);
-      return highland(wrappedExtractor(file));
-    })
-      .parallel(NUM_CPUS - 1) //leave some juice
-      .sequence() //Flatten one level deep
-      .errors(err => {
-        fs.writeFileSync(path.join(__dirname, 'error.log'), JSON.stringify(err));
-        return console.log(`Addresses stream threw error. Wrote error to error.log.`);
-      })
-      .map(publicSpace => JSON.stringify(publicSpace) + '\n')
-      .pipe(writeStream);
-
-    writeStream.on('finish', () => resolve());
-    writeStream.on('error', error => reject(error));
-  });
 }

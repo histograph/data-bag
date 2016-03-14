@@ -2,6 +2,7 @@
 
 var GJV = require('geojson-validation');
 var proj4 = require('proj4');
+var jsts = require('jsts');
 var reader = new jsts.io.GeoJSONReader();
 
 module.exports = {

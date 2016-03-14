@@ -4,6 +4,8 @@ var fs = require('fs');
 var sax = require('sax');
 var saxpath = require('saxpath');
 var geometryTools = require('./geometrytools.js');
+var highland = require('highland');
+var writer = require('./bagwriter.js');
 
 module.exports = {
   title: 'BAG',
@@ -11,9 +13,10 @@ module.exports = {
   extractFromFile: extractFromFile
 };
 
-function extractFromFile(inputFileName, callback) {
+function extractFromFile(inputFileName, outputPITsFile, outputRelationsFile, callback) {
   console.log(`Processing ${inputFileName}`);
-  var buildings = [];
+  var nodes = [];
+  var edges = [];
   var parser = new xml2js.Parser();
   var strict = true;
 
@@ -35,7 +38,7 @@ function extractFromFile(inputFileName, callback) {
           var polygon = [];
           polygon[0] = list;
 
-          buildings.push({
+          nodes.push({
             uri: module.exports.url + '/pand/' + result['bag_LVC:Pand']['bag_LVC:identificatie'][0],
             id: result['bag_LVC:Pand']['bag_LVC:identificatie'][0],
             bouwjaar: result['bag_LVC:Pand']['bag_LVC:bouwjaar'][0],
@@ -61,9 +64,9 @@ function extractFromFile(inputFileName, callback) {
     this._parser.resume();
   });
 
-  saxStream.on('end', () => {
-    console.log(`Returning ${buildings.length} buildings from ${inputFileName}`);
-    return callback(null, buildings);
-  });
+  saxStream.on('end', () => writer.write(nodes, edges, outputPITsFile, outputRelationsFile)
+    .then(result => callback(null, result))
+    .catch(err => callback(err))
+  );
 
 }
