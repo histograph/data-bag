@@ -1,23 +1,22 @@
 'use strict';
-var fs = require('fs');
-var path = require('path');
-var rimraf = require('rimraf');
-var nock = require('nock');
+const fs = require('fs');
+const path = require('path');
+const rimraf = require('rimraf');
+const nock = require('nock');
 
-var chai = require('chai');
-var chaiAsPromised = require('chai-as-promised');
+const chai = require('chai');
+const chaiAsPromised = require('chai-as-promised');
 chai.use(chaiAsPromised);
-var expect = chai.expect;
+const expect = chai.expect;
 
-var bag = require('../bag.js');
-var config = require('./mockups/config.json');
-var mockedAtomXML = path.join(__dirname, 'mockups', 'atom_inspireadressen.xml');
+const bag = require('../bag.js');
+const config = require('./mockups/config.json');
+const mockedAtomXML = path.join(__dirname, 'mockups', 'atom_inspireadressen.xml');
 const extractDir = path.join(__dirname, 'extract');
 
-describe('histograph-data-bag', function () {
-  describe('download phase', () => {
+describe('histograph-data-bag', function bagTest() {
+  describe('download phase', function download() {
     it('extracts the dataset size from the source description', () => {
-      console.log(mockedAtomXML);
       nock('http://geodata.nationaalgeoregister.nl')
         .defaultReplyHeaders({ 'Content-Type': 'text/xml' })
         .get('/inspireadressen/atom/inspireadressen.xml')
@@ -27,29 +26,25 @@ describe('histograph-data-bag', function () {
         .then(size => expect(size).to.equal(1550788857));
     });
 
-    nock('http://data.nlextract.nl')
-      .get('/bag/bron/BAG_Amstelveen_2011feb01.zip')
-      .replyWithFile(200, mockedAtomXML);
+    it('downloads the file', () => {
+      nock('http://data.nlextract.nl')
+        .get('/bag/bron/BAG_Amstelveen_2011feb01.zip')
+        .replyWithFile(200, mockedAtomXML);
 
-    bag.downloadDataFile(config.baseUrlTest, config.dataFileNameTest, __dirname, 5746696)
-      .then(filename => {
-        console.log(`Got ${filename}`);
-        return expect(fs.lstatSync(filename)).to.not.throw;
-      });
-
+      return bag.downloadDataFile(config.baseUrlTest, config.dataFileNameTest, __dirname, 5746696)
+        .then(filename => expect(fs.lstatSync(filename)).to.not.throw);
+    });
   });
 
-  describe('unzip phase', function () {
+  describe('unzip phase', function unzip() {
     this.timeout(30000);
-    it('extract the test dataset', done => {
-      var unzipDir = path.resolve('./test/unzip');
-      var filename = path.resolve('./test/BAG_Amstelveen_2011feb01.zip');
+    it('extract the test dataset', () => {
+      const unzipDir = path.resolve('./test/unzip');
+      const filename = path.resolve('./test/BAG_Amstelveen_2011feb01.zip');
 
-      console.log(`Unzipping to ${unzipDir}`);
-
-      bag.extractZipfile(filename, unzipDir)
+      return bag.extractZipfile(filename, unzipDir)
         .then(() => {
-          expect(fs.readdirSync(unzipDir)).to.deep.equal([
+          return expect(fs.readdirSync(unzipDir)).to.deep.equal([
             '1050LIG08032011-01022011.xml',
             '1050LIG08032011-01022011.zip',
             '1050NUM08032011-01022011-0001.xml',
@@ -74,14 +69,12 @@ describe('histograph-data-bag', function () {
             '1050XXX08032011-01022011.zip',
             'Leveringsdocument-BAG-Extract.xml'
           ]);
-          console.log('Test done \n');
-          done();
         });
     });
   });
 
-  describe('conversion phase', function () {
-    var jobs;
+  describe('conversion phase', function conversion() {
+    let jobs;
 
     before('create jobs object', () => {
       jobs = bag.mapFilesToJobs('./test/unzip', './test');
@@ -93,28 +86,25 @@ describe('histograph-data-bag', function () {
     });
 
     it('should map the files to a list of jobs', done => {
-      expect(jobs.length).to.equal(7);
+      expect(jobs.length).to.equal(8);
       expect(jobs[0].inputFile.split('.').slice(-1)[0]).to.deep.equal('xml');
       expect(jobs[0].outputPITsFile.split('.').slice(-2)[0]).to.deep.equal('pits');
       expect(jobs[0].outputRelationsFile.split('.').slice(-2)[0]).to.deep.equal('relations');
       done();
     });
 
-    it('should create the extraction dir if it does not exist', () => {
-          return bag.mkdir(extractDir).then(result => {
-            return expect(fs.existsSync(extractDir)).to.equal(true);
-          });
-    });
+    it('should create the extraction dir if it does not exist', () => bag.mkdir(extractDir)
+      .then(() => expect(fs.existsSync(extractDir)).to.equal(true)));
 
     this.timeout(200000);
 
     it('should extract the entries from a list of files', done => {
-      var sourceDir = path.join(__dirname, 'unzip');
-      return bag.convert(config, sourceDir, null, (err, result) => {
+      const sourceDir = path.join(__dirname, 'unzip');
+      bag.convert(config, sourceDir, null, (err, result) => {
         if (err) return done(err);
         expect(err).to.equal(null);
         console.log(result);
-        expect(result).to.deep.equal(new Array(7).fill(true));
+        expect(result).to.deep.equal(new Array(8).fill(true));
         done();
       });
     });

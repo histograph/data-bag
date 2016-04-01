@@ -1,10 +1,10 @@
 'use strict';
-var xml2js = require('xml2js');
-var fs = require('fs');
-var sax = require('sax');
-var saxpath = require('saxpath');
-var highland = require('highland');
-var writer = require('./bagwriter.js');
+const xml2js = require('xml2js');
+const fs = require('fs');
+const sax = require('sax');
+const saxpath = require('saxpath');
+const highland = require('highland');
+const writer = require('./bagwriter.js');
 
 module.exports = {
   title: 'BAG',
@@ -14,16 +14,16 @@ module.exports = {
 
 function extractFromFile(inputFileName, outputPITsFile, outputRelationsFile, callback) {
   console.log(`Processing ${inputFileName}`);
-  var nodes = [];
-  var edges = [];
-  var parser = new xml2js.Parser();
-  var strict = true;
+  const nodes = [];
+  const edges = [];
+  const parser = new xml2js.Parser();
+  const strict = true;
 
-  var saxStream = sax.createStream(strict);
+  const saxStream = sax.createStream(strict);
   fs.createReadStream(inputFileName, { encoding: 'utf8' })
     .pipe(saxStream);
 
-  var streamer   = new saxpath.SaXPath(saxStream, '//bag_LVC:Nummeraanduiding');
+  const streamer = new saxpath.SaXPath(saxStream, '//bag_LVC:Nummeraanduiding');
 
   streamer.on('match', xml => {
     parser.parseString(xml, (err, result) => {
