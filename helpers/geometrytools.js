@@ -20,8 +20,8 @@ var proj4Defs    = {
   'EPSG:28992': '+proj=sterea +lat_0=52.15616055555555 +lon_0=5.38763888888889 +k=0.9999079 +x_0=155000 +y_0=463000 +ellps=bessel +towgs84=565.237,50.0087,465.658,-0.406857,0.350733,-1.87035,4.0812 +units=m +no_defs'
 };
 
-function joinGMLposlist(posList, type) {
-  return new Promise((resolve, reject) => {
+function joinGMLposlist(posList, type, dimensions) {
+  return new Promise(resolve => {
     posList = posList.split(' ');
 
     var geojsonPosList = [];
@@ -31,7 +31,7 @@ function joinGMLposlist(posList, type) {
       var point = [];
       point.push(parseFloat(posList.shift()));
       point.push(parseFloat(posList.shift()));
-      posList.shift(); // skip 3d height
+      if (dimensions !== 2) posList.shift(); // skip 3d height
       point = toWGS84(point)
         .map(coordinate => parseFloat(
           coordinate.toFixed(7))

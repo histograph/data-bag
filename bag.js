@@ -1,64 +1,74 @@
 'use strict';
 
-var fs          = require('fs');
-var path        = require('path');
-var Promise     = require('bluebird');
-var request     = require('request');
-var progress    = require('request-progress');
-var yauzl       = require('yauzl');
-var mkdirp      = require('mkdirp');
-var highland    = require('highland');
+const fs = require('fs');
+const path = require('path');
+const Promise = require('bluebird');
+const request = require('request');
+const progress = require('request-progress');
+const yauzl = require('yauzl');
+const mkdirp = require('mkdirp');
+const highland = require('highland');
+const sax = require('sax');
+const saxpath = require('saxpath');
+const xml2js = require('xml2js');
 
-var sax         = require('sax');
-var saxpath     = require('saxpath');
-var xml2js      = require('xml2js');
-
-var workerFarm      = require('worker-farm');
-const NUM_CPUS      = require('os').cpus().length;
-const FARM_OPTIONS  = {
+const workerFarm = require('worker-farm');
+const NUM_CPUS = require('os').cpus().length;
+const FARM_OPTIONS = {
   maxConcurrentWorkers: require('os').cpus().length,
   maxCallsPerWorker: Infinity,
   maxConcurrentCallsPerWorker: 1
 };
 
-var buildingsworkers = workerFarm(
+const buildingsworkers = workerFarm(
   FARM_OPTIONS,
   require.resolve('./helpers/buildingsextractor.js'),
   ['extractFromFile']
 );
 
-var addressworkers = workerFarm(
+const addressworkers = workerFarm(
   FARM_OPTIONS,
   require.resolve('./helpers/addressesextractor.js'),
   ['extractFromFile']
 );
 
-var publicSpacesWorkers = workerFarm(
+const publicSpacesWorkers = workerFarm(
   FARM_OPTIONS,
   require.resolve('./helpers/publicspacesextractor.js'),
   ['extractFromFile']
 );
 
-var config = require('../config/index.js');
+const placesWorkers = workerFarm(
+  FARM_OPTIONS,
+  require.resolve('./helpers/placesextractor.js'),
+  ['extractFromFile']
+);
 
-module.exports = {
-  download: download,
-  extractDownloadSize: extractDownloadSize,
-  downloadDataFile: downloadDataFile,
-  unzip: unzip,
-  extractZipfile: extractZipfile,
-  convert: convert,
-  mapFilesToJobs: mapFilesToJobs,
-  mkdir: mkdir,
-  steps: [
-    download,
-    unzip,
-    convert
-  ]
-};
+function extractDownloadSize(atomURL) {
+  return new Promise((resolve, reject) => {
+    request(atomURL,
+      (err, response, body) => {
+        if (err) return reject(err);
+        if (!response) return reject(new Error(`No response returned from request to ${atomURL}`));
+        if (response.statusCode !== 200) {
+          return reject(new Error(`Unexpected request to ${atomURL} response status ${response.statusCode}`));
+        }
+        if (!body) return reject(new Error(`The request to ${atomURL} did not return a response body`));
+
+        const parser = new xml2js.Parser();
+        return parser.parseString(body, (error, result) => {
+          if (error) return reject(new Error(`Error parsing body ${body} \n ${error.stack}`));
+          console.log(`Length: ${JSON.stringify(result.feed.entry[0].link[0].$.length, null, 2)}`);
+          return resolve(parseInt(result.feed.entry[0].link[0].$.length, 10));
+        });
+      }
+    );
+  });
+}
+
 
 function download(config, dir, writer, callback) {
-  console.log(`Downloading...`);
+  console.log(`Downloading ${config.baseDownloadUrl}...`);
   return extractDownloadSize(config.feedURL)
     .then(size => downloadDataFile(config.baseDownloadUrl, config.datafilename, dir, size))
     .then((fullPath) => {
@@ -70,32 +80,9 @@ function download(config, dir, writer, callback) {
       return callback(error);
     });
 }
-
-function extractDownloadSize(atomURL) {
-  return new Promise((resolve, reject) => {
-    request(atomURL,
-      (err, response, body) => {
-        if (err) return reject(err);
-        if (!response) return reject(new Error(`No response returned from request to ${atomURL}`));
-        if (response.statusCode != 200) {
-          return reject(new Error(`Unexpected request to ${atomURL} response status ${response.statusCode}`));
-        }
-        if (!body) return reject(new Error(`The request to ${atomURL} did not return a response body`));
-
-        var parser = new xml2js.Parser();
-        parser.parseString(body, (err, result) => {
-          if (err) return reject(new Error(`Error parsing body ${body} \n ${err.stack}`));
-          console.log(`Length: ${JSON.stringify(result.feed.entry[0].link[0].$.length, null, 2)}`);
-          resolve(parseInt(result.feed.entry[0].link[0].$.length));
-        });
-      }
-    );
-  });
-}
-
 function downloadDataFile(baseURL, filename, dir, size) {
   return new Promise((resolve, reject) => {
-    var fullZipFilePath = path.join(dir, filename);
+    const fullZipFilePath = path.join(dir, filename);
     console.log(`Getting ${baseURL + filename}:`);
     console.log(`Total size: ${size}`);
 
@@ -109,27 +96,10 @@ function downloadDataFile(baseURL, filename, dir, size) {
       })
       .on('error', err => reject(err))
       .on('end', () => {
-        console.log(`Download progress: 100%`);
+        console.log('Download progress: 100%');
         resolve(fullZipFilePath);
       });
   });
-}
-
-function unzip(config, dir, writer, callback) {
-  console.log(`WARNING, make sure you have at least 45 Gb of free disk space for extraction, or press Ctrl-c to abort.`);
-  console.log(`The unzip phase itself can take up to an hour and will extract about 4.000 XML files.`);
-  console.log(`Since the zipfile consists of sub-zipfiles of unknown size, there cannot be given an estimation of remaining time.`);
-  console.log(`The process will appear to be frozen for quite some time, especially on the ***PND***.zip file.`);
-  console.log(`However, this will at least spare you the logging of about 4000 file names.`);
-  return extractZipfile(path.join(dir, config.datafilename), dir)
-    .then(() => {
-      console.log(`${new Date()} extraction complete!`);
-      return callback;
-    })
-    .catch(error => {
-      console.error(`${new Date()} Extraction failed due to ${error}`);
-      return callback(error);
-    });
 }
 
 function extractZipfile(zipfilename, extractdir) {
@@ -147,11 +117,10 @@ function extractZipfile(zipfilename, extractdir) {
         if (/\/$/.test(entry.fileName)) {
           // directory file names end with '/'
           mkdirp(entry.fileName,
-            err => {
-              if (err) throw err;
+            error => {
+              if (error) throw error;
               return zipfile.readEntry();
             });
-
         }
 
         // file entry
@@ -164,9 +133,7 @@ function extractZipfile(zipfilename, extractdir) {
           // ensure parent directory exists
           mkdirp(path.dirname(entry.fileName), err => {
             if (err) reject(err);
-
             readStream.pipe(fs.createWriteStream(path.join(extractdir, entry.fileName)));
-
             readStream.on('end', () => {
               if (entry.fileName.slice(-4) === '.zip') {
                 extractZipfile(path.join(extractdir, entry.fileName), extractdir)
@@ -180,10 +147,8 @@ function extractZipfile(zipfilename, extractdir) {
             });
 
             readStream.on('error', err => reject(err));
-
           });
         });
-
       });
 
       zipfile.on('end', () => resolve());
@@ -191,32 +156,21 @@ function extractZipfile(zipfilename, extractdir) {
   });
 }
 
-function convert(config, dir, writer, callback) {
-  var extractDir = path.join(config.data.generatedDataDir, 'data-bag');
-  console.log(`WARNING, make sure you have at least 45 Gb of free disk space for conversion, or press Ctrl-c to abort.`);
-  var jobs = mapFilesToJobs(dir, extractDir);
-
-  mkdir(extractDir)
+function unzip(config, dir, writer, callback) {
+  console.log('WARNING, make sure you have at least 45 Gb of free disk space for extraction, or press Ctrl-c to abort.');
+  console.log('The unzip phase itself can take up to an hour and will extract about 4.000 XML files.');
+  console.log('Since the zipfile consists of sub-zipfiles of unknown size, there cannot be given an estimation of remaining time.');
+  console.log('The process will appear to be frozen for quite some time, especially on the ***PND***.zip file.');
+  console.log('However, this will at least spare you the logging of about 4000 file names.');
+  return extractZipfile(path.join(dir, config.datafilename), dir)
     .then(() => {
-      var jobStream = highland(jobs);
-
-      jobStream
-        .map(job => {
-          console.log(`Processing ${job.inputFile} to output to ${job.outputPITsFile} and ${job.outputRelationsFile}`);
-          return highland(wrapJob(job.converter.extractFromFile, job.inputFile, job.outputPITsFile, job.outputRelationsFile));
-        })
-        .parallel(NUM_CPUS - 1)
-        .errors(err => {
-          fs.appendFileSync(path.join(__dirname, 'error.log'), JSON.stringify(err));
-          return console.log(`Stream threw error. Wrote error to error.log.`);
-        })
-        .toArray(result => {
-          console.log(`Done processing all files!`);
-          return callback(null, result)
-        });
-
+      console.log(`${new Date()} extraction complete!`);
+      return callback;
     })
-    .catch(err => callback(err, null));
+    .catch(error => {
+      console.error(`${new Date()} Extraction failed due to ${error}`);
+      return callback(error);
+    });
 }
 
 function mkdir(path) {
@@ -226,13 +180,14 @@ function mkdir(path) {
         console.log(`Error during directory creation: ${err}`);
         reject(err);
       }
-      resolve()
+      resolve();
     });
   });
 }
 
+
 function mapFilesToJobs(dir, extractDir) {
-  var fileTypes = {
+  const fileTypes = {
     PND: {
       converter: buildingsworkers,
       outputPITsFile: 'pand.pits.ndjson',
@@ -247,14 +202,19 @@ function mapFilesToJobs(dir, extractDir) {
       converter: publicSpacesWorkers,
       outputPITsFile: 'openbareruimte.pits.ndjson',
       outputRelationsFile: 'openbareruimte.relations.ndjson'
+    },
+    WPL: {
+      converter: placesWorkers,
+      outputPITsFile: 'woonplaats.pits.ndjson',
+      outputRelationsFile: 'woonplaats.relations.ndjson'
     }
   };
 
   return fs.readdirSync(dir)
     .filter(file => file.slice(-4) === '.xml')
     .map(file => {
-      var type = file.slice(4, 7);
-      var job = {};
+      const type = file.slice(4, 7);
+      const job = {};
       if (!fileTypes[type]) return null;
       job.converter = fileTypes[type].converter;
       job.inputFile = path.resolve(path.join(dir, file));
@@ -265,11 +225,55 @@ function mapFilesToJobs(dir, extractDir) {
     .filter(job => (job));
 }
 
+function convert(config, dir, writer, callback) {
+  const extractDir = path.join(config.data.generatedDataDir, 'data-bag');
+  console.log('WARNING, make sure you have at least 45 Gb of free disk space for conversion, or press Ctrl-c to abort.');
+  const jobs = mapFilesToJobs(dir, extractDir);
+
+  mkdir(extractDir)
+    .then(() => {
+      const jobStream = highland(jobs);
+
+      jobStream
+        .map(job => {
+          console.log(`Processing ${job.inputFile} to output to ${job.outputPITsFile} and ${job.outputRelationsFile}`);
+          return highland(wrapJob(job.converter.extractFromFile, job.inputFile, job.outputPITsFile, job.outputRelationsFile));
+        })
+        .parallel(NUM_CPUS - 1)
+        .errors(err => {
+          fs.appendFileSync(path.join(__dirname, 'error.log'), JSON.stringify(err));
+          return console.log('Stream threw error. Wrote error to error.log.');
+        })
+        .toArray(result => {
+          console.log('Done processing all files!');
+          return callback(null, result)
+        });
+
+    })
+    .catch(err => callback(err, null));
+}
+
 function wrapJob(jobFunction, sourceFile, pitsFile, relationsFile) {
   return new Promise((resolve, reject) => {
     jobFunction(sourceFile, pitsFile, relationsFile, (err, result) => {
       if (err) return reject(err);
-      resolve(result);
+      return resolve(result);
     });
   });
 }
+
+module.exports = {
+  download,
+  extractDownloadSize,
+  downloadDataFile,
+  unzip,
+  extractZipfile,
+  convert,
+  mapFilesToJobs,
+  mkdir,
+  steps: [
+    download,
+    unzip,
+    convert
+  ]
+};

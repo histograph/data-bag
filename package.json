@@ -9,6 +9,7 @@
     "babel-register": "^6.4.3",
     "chai": "^3.5.0",
     "chai-as-promised": "^5.2.0",
+    "eslint-config-airbnb": "^6.2.0",
     "istanbul": "^0.4.2",
     "jscs": "^1.10.0",
     "jshint": "^2.6.0",
