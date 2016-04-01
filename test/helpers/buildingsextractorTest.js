@@ -1,30 +1,29 @@
 'use strict';
-var fs = require('fs');
-var path = require('path');
+const fs = require('fs');
+const path = require('path');
 
-var nock = require('nock');
+const nock = require('nock');
 
-var chai = require('chai');
-var chaiAsPromised = require('chai-as-promised');
+const chai = require('chai');
+const chaiAsPromised = require('chai-as-promised');
 chai.use(chaiAsPromised);
-var expect = chai.expect;
+const expect = chai.expect;
 
-var buildingsExtractor = require('../../helpers/buildingsextractor.js');
+const buildingsExtractor = require('../../helpers/buildingsextractor.js');
+const sourceFile = path.join(__dirname, '..', 'mockups', 'bag-PND-snippet.xml');
+const outputPITsFile = path.join(__dirname, '..', 'pand.pits.ndjson');
+const outputRelationsFile = path.join(__dirname, '..', 'pand.relations.ndjson');
 
 describe('buildings extraction', function() {
+  after('Cleanup', () => {
+    fs.unlinkSync(outputPITsFile);
+  });
+  
   it('should extract the building entries from a file', (done) => {
-    var sourceFile = path.join(__dirname, '..', 'mockups', 'bag-PND-snippet.xml');
-    var outputPITsFile = path.join(__dirname, '..', 'extract', 'pand.pits.ndjson');
-    var outputRelationsFile = path.join(__dirname, '..', 'extract', 'pand.relations.ndjson');
-
-    try {
-      fs.unlinkSync(outputPITsFile);
-    } catch(err) {}
-
     buildingsExtractor.extractFromFile(sourceFile, outputPITsFile, outputRelationsFile, (err, result) => {
       if (err) throw err;
 
-      var nodes = fs.readFileSync(outputPITsFile, 'utf-8')
+      const nodes = fs.readFileSync(outputPITsFile, 'utf-8')
         .split('\n')
         .filter(node => (node))
         .map(node => JSON.parse(node));

@@ -1,30 +1,34 @@
 'use strict';
-var fs = require('fs');
-var path = require('path');
-var nock = require('nock');
+const fs = require('fs');
+const path = require('path');
+const nock = require('nock');
 
-var chai = require('chai');
-var chaiAsPromised = require('chai-as-promised');
+const chai = require('chai');
+const chaiAsPromised = require('chai-as-promised');
 chai.use(chaiAsPromised);
-var expect = chai.expect;
+const expect = chai.expect;
 
-var publicSpacesExtractor = require('../../helpers/publicspacesextractor.js');
+const publicSpacesExtractor = require('../../helpers/publicspacesextractor.js');
+const sourceFile = path.join(__dirname, '..', 'mockups', 'bag-OPR-snippet.xml');
+const outputPITsFile = path.join(__dirname, '..', 'openbareruimte.pits.ndjson');
+const outputRelationsFile = path.join(__dirname, '..', 'openbareruimte.relations.ndjson');
 
 describe('public spaces extraction', function() {
+  after('Cleanup', () => {
+    fs.unlinkSync(outputPITsFile);
+    fs.unlinkSync(outputRelationsFile);
+  });
+
   it('should extract the public spaces from the snippet', done => {
-    var sourceFile = path.join(__dirname, '..', 'mockups', 'bag-OPR-snippet.xml');
-    var outputPITsFile = path.join(__dirname, '..', 'extract', 'openbareruimte.pits.ndjson');
-    var outputRelationsFile = path.join(__dirname, '..', 'extract', 'openbareruimte.relations.ndjson');
+    return publicSpacesExtractor.extractFromFile(sourceFile,  outputPITsFile, outputRelationsFile, (err, result) => {
+      if (err) return done(err);
 
-    publicSpacesExtractor.extractFromFile(sourceFile,  outputPITsFile, outputRelationsFile, (err, result) => {
-      if (err) throw err;
-
-      var nodes = fs.readFileSync(outputPITsFile, 'utf-8')
+      const nodes = fs.readFileSync(outputPITsFile, 'utf-8')
         .split('\n')
         .filter(node => (node))
         .map(node => JSON.parse(node));
 
-      var edges = fs.readFileSync(outputRelationsFile, 'utf-8')
+      const edges = fs.readFileSync(outputRelationsFile, 'utf-8')
         .split('\n')
         .filter(edge => (edge))
         .map(edge => JSON.parse(edge));

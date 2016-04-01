@@ -203,7 +203,7 @@ function convert(config, dir, writer, callback) {
       jobStream
         .map(job => {
           console.log(`Processing ${job.inputFile} to output to ${job.outputPITsFile} and ${job.outputRelationsFile}`);
-          return highland.wrapCallback(job.converter.extractFromFile(job.inputFile, job.outputPITsFile, job.outputRelationsFile));
+          return highland(wrapJob(job.converter.extractFromFile, job.inputFile, job.outputPITsFile, job.outputRelationsFile));
         })
         .parallel(NUM_CPUS - 1)
         .errors(err => {
@@ -263,4 +263,13 @@ function mapFilesToJobs(dir, extractDir) {
       return job;
     })
     .filter(job => (job));
+}
+
+function wrapJob(jobFunction, sourceFile, pitsFile, relationsFile) {
+  return new Promise((resolve, reject) => {
+    jobFunction(sourceFile, pitsFile, relationsFile, (err, result) => {
+      if (err) return reject(err);
+      resolve(result);
+    });
+  });
 }

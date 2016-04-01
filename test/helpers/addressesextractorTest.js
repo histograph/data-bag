@@ -1,29 +1,26 @@
 'use strict';
-var fs = require('fs');
-var path = require('path');
-var nock = require('nock');
+const fs = require('fs');
+const path = require('path');
+const nock = require('nock');
 
-var chai = require('chai');
-var chaiAsPromised = require('chai-as-promised');
+const chai = require('chai');
+const chaiAsPromised = require('chai-as-promised');
 chai.use(chaiAsPromised);
-var expect = chai.expect;
+const expect = chai.expect;
 
-var addressesExtractor = require('../../helpers/addressesextractor.js');
+const addressesExtractor = require('../../helpers/addressesextractor.js');
+const sourceFile = path.join(__dirname, '..', 'mockups', 'bag-NUM-snippet.xml');
+const outputPITsFile = path.join(__dirname, '..', 'adres.pits.ndjson');
+const outputRelationsFile = path.join(__dirname, '..', 'adres.relations.ndjson');
 
 describe('addresses extraction', () => {
+
+  after('Cleanup', () => {
+    fs.unlinkSync(outputPITsFile);
+    fs.unlinkSync(outputRelationsFile);
+  });
+
   it('should extract an address from a mocked snippet', done => {
-    var sourceFile = path.join(__dirname, '..', 'mockups', 'bag-NUM-snippet.xml');
-    var outputPITsFile = path.join(__dirname, '..', 'extract', 'adres.pits.ndjson');
-    var outputRelationsFile = path.join(__dirname, '..', 'extract', 'adres.relations.ndjson');
-
-    try {
-      fs.unlinkSync(outputPITsFile);
-    } catch(err) {}
-
-    try {
-      fs.unlinkSync(outputRelationsFile);
-    } catch(err) {}
-
     addressesExtractor.extractFromFile(sourceFile,  outputPITsFile, outputRelationsFile, (err, result) => {
       if (err) throw err;
 

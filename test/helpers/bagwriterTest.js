@@ -1,18 +1,17 @@
 'use strict';
-var fs = require('fs');
-var writer = require('../../helpers/bagwriter.js');
-var chai = require('chai');
-var chaiAsPromised = require('chai-as-promised');
+const fs = require('fs');
+const writer = require('../../helpers/bagwriter.js');
+const chai = require('chai');
+const chaiAsPromised = require('chai-as-promised');
 chai.use(chaiAsPromised);
-var expect = chai.expect;
+const expect = chai.expect;
 
 describe('writer', function () {
-  var testNodesFile = './test/extract/test.nodes';
-  var testEdgesFile = './test/extract/test.edges';
+  const testNodesFile = './test/test.nodes';
 
-  try {
+  after('Cleanup', () => {
     fs.unlinkSync(testNodesFile);
-  } catch(err) {}
+  });
 
   it('should reject empty nodes object', () => {
     return expect(writer.write()).to.be.rejected;

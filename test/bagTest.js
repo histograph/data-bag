@@ -12,6 +12,7 @@ var expect = chai.expect;
 var bag = require('../bag.js');
 var config = require('./mockups/config.json');
 var mockedAtomXML = path.join(__dirname, 'mockups', 'atom_inspireadressen.xml');
+const extractDir = path.join(__dirname, 'extract');
 
 describe('histograph-data-bag', function () {
   describe('download phase', () => {
@@ -86,6 +87,11 @@ describe('histograph-data-bag', function () {
       jobs = bag.mapFilesToJobs('./test/unzip', './test');
     });
 
+    after('cleanup', () => {
+      console.log('Cleaning up');
+      rimraf.sync(extractDir);
+    });
+
     it('should map the files to a list of jobs', done => {
       expect(jobs.length).to.equal(7);
       expect(jobs[0].inputFile.split('.').slice(-1)[0]).to.deep.equal('xml');
@@ -95,27 +101,22 @@ describe('histograph-data-bag', function () {
     });
 
     it('should create the extraction dir if it does not exist', () => {
-      var extractDir = path.join(__dirname, 'extract');
-      if (fs.existsSync(extractDir)) rimraf(extractDir, () => {
-        return bag.mkdir(extractDir).then(result => {
-          return expect(fs.existsSync(extractDir)).to.equal(true);
-        });
-      });
-
+          return bag.mkdir(extractDir).then(result => {
+            return expect(fs.existsSync(extractDir)).to.equal(true);
+          });
     });
 
-    this.timeout(100000);
+    this.timeout(200000);
 
     it('should extract the entries from a list of files', done => {
       var sourceDir = path.join(__dirname, 'unzip');
-      bag.convert(config, sourceDir, null, (err, result) => {
-        if (err) throw err;
+      return bag.convert(config, sourceDir, null, (err, result) => {
+        if (err) return done(err);
         expect(err).to.equal(null);
-        expect(result).to.equal(true);
+        console.log(result);
+        expect(result).to.deep.equal(new Array(7).fill(true));
         done();
       });
     });
-
   });
-
 });

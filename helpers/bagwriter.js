@@ -1,5 +1,4 @@
 'use strict';
-var debug = require('debug')('file writer');
 var fs = require('fs');
 var Promise = require('bluebird');
 var highland = require('highland');
@@ -12,8 +11,8 @@ function write(nodes, edges, outputPITsFile, outputRelationsFile){
     if (!outputPITsFile) return reject(new Error('Requires an outputPITsFile to write to'));
     if (edges && !outputRelationsFile) return reject(new Error('Requires an outputRelationsFile to write to if edges are supplied'));
 
-    debug(`Writing ${nodes.length} PITs`);
-    if (edges) debug(`and ${edges.length} relations`);
+    console.log(`Writing ${nodes.length} PITs`);
+    if (edges) console.log(`and ${edges.length} relations`);
     var nodeStream = highland(nodes);
     nodeStream.each(node => fs.appendFileSync(outputPITsFile, JSON.stringify(node) + '\n'));
     nodeStream.done(() => {
