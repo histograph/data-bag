@@ -1,0 +1,59 @@
+{
+  "name": "histograph-data-bag",
+  "version": "0.1.0",
+  "description": "Download and convert Basisregistratie Adressen en Gebouwen data to Histograph NDJSON",
+  "main": "bag.js",
+  "devDependencies": {
+    "babel-cli": "^6.4.5",
+    "babel-preset-es2015": "^6.3.13",
+    "babel-register": "^6.4.3",
+    "chai": "^3.5.0",
+    "chai-as-promised": "^5.2.0",
+    "eslint-config-airbnb": "^6.2.0",
+    "istanbul": "^0.4.2",
+    "jscs": "^1.10.0",
+    "jshint": "^2.6.0",
+    "mocha": "^2.3.4",
+    "nock": "^7.2.2",
+    "rimraf": "^2.5.2",
+    "tape": "^3.4.0"
+  },
+  "scripts": {
+    "test": "mocha test/test.js"
+  },
+  "author": "Rein van t Veer",
+  "license": "MIT",
+  "dependencies": {
+    "bluebird": "^3.1.1",
+    "debug": "^2.2.0",
+    "geojson-validation": "^0.1.6",
+    "highland": "^2.5.1",
+    "jsts": "^0.17.0",
+    "mkdirp": "^0.5.1",
+    "proj4": "^2.3.12",
+    "ramda": "^0.18.0",
+    "reproject": "^1.0.0",
+    "request": "^2.67.0",
+    "request-progress": "^2.0.1",
+    "sax": "^1.1.4",
+    "saxpath": "^0.6.3",
+    "xml2js": "^0.4.16"
+  },
+  "jshintConfig": {
+    "node": true,
+    "globalstrict": false,
+    "undef": true,
+    "unused": true,
+    "noarg": true
+  },
+  "jscsConfig": {
+    "preset": "airbnb",
+    "requireCamelCaseOrUpperCaseIdentifiers": null,
+    "disallowMultipleVarDecl": true,
+    "requireMultipleVarDecl": null,
+    "maxErrors": 1000,
+    "maximumLineLength": 150,
+    "requirePaddingNewLinesAfterBlocks": null,
+    "requireTrailingComma": null
+  }
+}
